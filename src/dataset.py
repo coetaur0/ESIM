@@ -9,24 +9,24 @@ from torch.utils.data import Dataset
 
 class ESIMDataset(Dataset):
     """
-    Dataset definition for the ESIM model.
+    Dataset for the ESIM model.
     """
 
     def __init__(self, data, pad_idx=0, max_prem_len=None, max_hyp_len=None):
         """
         Args:
             data: A dictionary containing the preprocessed premises,
-                hypotheses and labels of a dataset.
+                hypotheses and labels of some dataset.
             pad_idx: An integer indicating the index being used for the
                 padding token in the data.
             max_prem_len: An integer indicating what is the maximum length
-                accepted for the sequences in the premises. 
-                If set to None, the length of the longest sequence in the
-                premises in 'data' is used.
+                accepted for the sequences in the premises.
+                If set to None, the length of the longest premise in 'data'
+                is used.
             max_hyp_len: An integer indicating what is the maximum length
                 accepted for the sequences in the hypotheses.
-                If set to None, the length of the longest sequence in the
-                hypotheses in 'data' is used.
+                If set to None, the length of the longest hypothesis in
+                'data' is used.
         """
         if max_prem_len is None:
             max_prem_len = max([len(seq) for seq in data["premises"]])
@@ -43,11 +43,13 @@ class ESIMDataset(Dataset):
                      "labels": torch.tensor(data["labels"])}
 
         for i, premise in enumerate(data["premises"]):
-            self.data["premises"][i][:len(premise)] = torch.tensor(premise)
+            end = min(len(premise), max_prem_len)
+            self.data["premises"][i][:end] = torch.tensor(premise[:end])
 
             hypothesis = data["hypotheses"][i]
-            self.data["hypotheses"][i][:len(hypothesis)] =\
-                torch.tensor(hypothesis)
+            end = min(len(hypothesis), max_hyp_len)
+            self.data["hypotheses"][i][:end] =\
+                torch.tensor(hypothesis[:end])
 
     def __len__(self):
         return self.num_seqs

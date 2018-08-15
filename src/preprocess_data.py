@@ -13,7 +13,7 @@ from collections import Counter
 def read_data(filepath, lower=False, ignore_punct=True):
     """
     Read the premises, hypotheses and labels from a file in the SNLI
-    dataset and return them in a dictionary of lists.
+    dataset and return them in a dictionary.
 
     Args:
         filepath: The path to the file containing the premises, hypotheses
@@ -73,8 +73,10 @@ def build_worddict(data, num_words=None):
         data: A dictionary with at least two elements that are lists
             of lists containing words and that have 'premises' and
             'hypotheses' as keys.
-        num_words: If specified, indicates the maximum number of words to
-            keep in the worddict.
+        num_words: Integer indicating the maximum number of words to
+            keep in the worddict. If specified, only the 'num_words' most
+            frequent words will be kept. If set to None, all words are
+            kept.
 
     Returns:
         A dictionary associating words to indices.
@@ -126,7 +128,7 @@ def transform_to_indices(data, worddict, labeldict):
     as their associated labels, to integer indices.
 
     Args:
-        data: A dictionary containing a list of premises, hypotheses
+        data: A dictionary containing lists of premises, hypotheses
             and labels.
         worddict: A dictionary associating words to indices.
         labeldict: A dictionary associating labels to indices.
@@ -161,7 +163,7 @@ def build_embedding_matrix(worddict, embeddings_file):
 
     Args:
         worddict: A dictionary associating words to unique indices.
-        embeddings_file: A file containing pre-trained word embeddings.
+        embeddings_file: A file containing pretrained word embeddings.
 
     Returns:
         A numpy matrix of size (num_words x embedding_dim) containing

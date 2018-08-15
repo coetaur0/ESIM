@@ -18,7 +18,7 @@ def download(url, targetdir):
         url: The url from which the file must be downloaded.
         targetdir: The path to the directory where the file must be saved.
     """
-    print("* Downloading data from {}".format(url))
+    print("\t* Downloading data from {}".format(url))
     filepath = os.path.join(targetdir, url.split('/')[-1])
     wget.download(url, filepath)
     return filepath
@@ -31,7 +31,7 @@ def unzip(filepath):
     Args:
         filepath: The path to the zipped file.
     """
-    print("\n* Extracting: {}".format(filepath))
+    print("\n\t* Extracting: {}".format(filepath))
     dirpath = os.path.dirname(filepath)
     with zipfile.ZipFile(filepath) as zf:
         for name in zf.namelist():
@@ -64,11 +64,11 @@ def download_unzip(url, targetdir):
         unzip(download(url, targetdir))
     # Skip downloading if the zipped data is already available.
     elif os.path.exists(filepath):
-        print("* Found zipped data - skipping download")
+        print("\t* Found zipped data - skipping download")
         unzip(filepath)
     # Skip download and unzipping if the unzipped data is already available.
     else:
-        print("* Found unzipped data for {} - skipping download and unzipping"
+        print("\t* Found unzipped data for {} - skipping download and unzipping"
               .format(targetdir))
 
 
