@@ -7,9 +7,13 @@ import torch
 from torch.utils.data import Dataset
 
 
-class ESIMDataset(Dataset):
+class NLIDataset(Dataset):
     """
-    Dataset for the ESIM model.
+    Dataset class for Natural Language Inference datasets.
+
+    The class can be used on datasets that have been preprocessed with
+    the 'preprocess_data.py' script in the 'scripts/' folder of this
+    repository.
     """
 
     def __init__(self, data, pad_idx=0, max_prem_len=None, max_hyp_len=None):
@@ -54,8 +58,7 @@ class ESIMDataset(Dataset):
 
             hypothesis = data["hypotheses"][i]
             end = min(len(hypothesis), self.max_hyp_len)
-            self.data["hypotheses"][i][:end] =\
-                torch.tensor(hypothesis[:end])
+            self.data["hypotheses"][i][:end] = torch.tensor(hypothesis[:end])
 
     def __len__(self):
         return self.num_seqs
