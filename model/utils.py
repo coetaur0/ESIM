@@ -31,7 +31,7 @@ def sort_by_seq_len(batch, seq_lens, decreasing=True):
             restore the order of the sequences in 'sorted_batch' so that it
             matches the input batch.
     """
-    sorted_seq_lens, sorting_idx = seq_lens.sort(0, decreasing=decreasing)
+    sorted_seq_lens, sorting_idx = seq_lens.sort(0, descending=decreasing)
 
     sorted_batch = batch.index_select(0, sorting_idx)
 
