@@ -28,26 +28,32 @@ class ESIMDataset(Dataset):
                 If set to None, the length of the longest hypothesis in
                 'data' is used.
         """
+        self.premises_lens = [len(seq) for seq in data["premises"]]
+        self.max_prem_len = max_prem_len
         if max_prem_len is None:
-            max_prem_len = max([len(seq) for seq in data["premises"]])
+            self.max_prem_len = max(self.premises_lens)
 
+        self.hypotheses_lens = [len(seq) for seq in data["hypotheses"]]
+        self.max_hyp_len = max_hyp_len
         if max_hyp_len is None:
-            max_hyp_len = max([len(seq) for seq in data["hypotheses"]])
+            self.max_hyp_len = max(self.hypotheses_lens)
 
         self.num_seqs = len(data["premises"])
 
-        self.data = {"premises": torch.ones((self.num_seqs, max_prem_len),
-                                            dtype=torch.int64) * pad_idx,
-                     "hypotheses": torch.ones((self.num_seqs, max_hyp_len),
-                                              dtype=torch.int64) * pad_idx,
-                     "labels": torch.tensor(data["labels"])}
+        self.data = {"premises": torch.ones((self.num_seqs,
+                                             self.max_prem_len),
+                                            dtype=torch.long) * pad_idx,
+                     "hypotheses": torch.ones((self.num_seqs,
+                                               self.max_hyp_len),
+                                              dtype=torch.long) * pad_idx,
+                     "labels": torch.tensor(data["labels"], dtype=torch.long)}
 
         for i, premise in enumerate(data["premises"]):
-            end = min(len(premise), max_prem_len)
+            end = min(len(premise), self.max_prem_len)
             self.data["premises"][i][:end] = torch.tensor(premise[:end])
 
             hypothesis = data["hypotheses"][i]
-            end = min(len(hypothesis), max_hyp_len)
+            end = min(len(hypothesis), self.max_hyp_len)
             self.data["hypotheses"][i][:end] =\
                 torch.tensor(hypothesis[:end])
 
@@ -56,5 +62,9 @@ class ESIMDataset(Dataset):
 
     def __getitem__(self, idx):
         return {"premise": self.data["premises"][idx],
+                "premise_len": min(self.premises_lens[idx],
+                                   self.max_prem_len),
                 "hypothesis": self.data["hypotheses"][idx],
+                "hypothesis_len": min(self.hypotheses_lens[idx],
+                                      self.max_hyp_len),
                 "label": self.data["labels"][idx]}
