@@ -4,6 +4,7 @@ Utilities for the ESIM model.
 # Aurelien Coet, 2018.
 
 import torch
+import torch.nn as nn
 
 
 # Code inspired from:
@@ -40,3 +41,32 @@ def sort_by_seq_len(batch, seq_lens, decreasing=True):
     restoration_idx = idx_range.index_select(0, reverse_mapping)
 
     return sorted_batch, sorted_seq_lens, sorting_idx, restoration_idx
+
+
+# Code inspired from:
+# https://github.com/allenai/allennlp/blob/master/allennlp/nn/util.py.
+def masked_softmax(tensor, mask):
+    """
+    Apply a masked softmax on the last dimension of a tensor.
+    The input tensor and mask should be of size (batch, *, sequence_length).
+
+    Args:
+        tensor: The tensor on which the softmax function must be applied along
+            the last dimension.
+        mask: A mask of the same size as the tensor with 0s in the positions of
+            the values that must be masked and 1s everywhere else.
+
+    Returns:
+        A tensor of the same size as the inputs containing the result of the
+        softmax.
+    """
+    tensor_shape = tensor.size()
+    reshaped_tensor = tensor.view(-1, tensor_shape[-1])
+    reshaped_mask = mask.view(-1, mask.size()[-1])
+
+    result = nn.functional.softmax(reshaped_tensor * reshaped_mask, dim=-1)
+    result = result * reshaped_mask
+    # 1e-13 is added to avoid divisions by zero.
+    result = result / (result.sum(dim=1, keepdim=True) + 1e-13)
+
+    return result.view(*tensor_shape)

@@ -106,3 +106,29 @@ class Seq2seqEncoder(nn.Module):
         reordered_outputs = outputs.index_select(0, restoration_idx)
 
         return reordered_outputs
+
+
+class SoftmaxAttention(nn.Module):
+    """
+    Layer taking premises and hypotheses encoded by an RNN and computing the
+    soft attention between their elements.
+
+    The dot product of the encoded vectors in the premises and hypotheses is
+    first computed. The softmax of the result is then used in a weighted sum
+    of the vectors of the premises for each element of the hypotheses, and
+    conversely for the premises.
+    """
+
+    def forward(self, premise_batch, hypothesis_batch):
+        similarity_matrix = premise_batch.bmm(hypothesis_batch.transpose(2, 1))
+        # Mask to ignore the padding values (0s).
+        mask = torch.ones_like(similarity_matrix, dtye=torch.float)
+        mask[similarity_matrix == 0] = 0
+
+        prem_hyp_attn = masked_softmax(similarity_matrix, mask)
+        hyp_prem_attn = masked_softmax(similarity_matrix.transpose(1, 2)
+                                                        .contiguous(),
+                                       mask.transpose(1, 2).contiguous())
+
+        # TODO: compute the weighted sum of the encoded vectors of the premises
+        # and hypotheses with the softmax.
