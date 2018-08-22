@@ -6,7 +6,7 @@ Definition of the layers of the ESIM model.
 import torch
 import torch.nn as nn
 
-from utils import sort_by_seq_len
+from utils import sort_by_seq_len, masked_softmax, weighted_sum
 
 
 class Seq2seqEncoder(nn.Module):
@@ -119,16 +119,26 @@ class SoftmaxAttention(nn.Module):
     conversely for the premises.
     """
 
-    def forward(self, premise_batch, hypothesis_batch):
-        similarity_matrix = premise_batch.bmm(hypothesis_batch.transpose(2, 1))
-        # Mask to ignore the padding values (0s).
-        mask = torch.ones_like(similarity_matrix, dtye=torch.float)
-        mask[similarity_matrix == 0] = 0
+    def forward(self, premise_batch, premise_mask, hypothesis_batch,
+                hypothesis_mask):
+        # Dot product between premises and hypotheses in each sequence of
+        # the batch.
+        similarity_matrix = premise_batch.bmm(hypothesis_batch.transpose(2, 1)
+                                                              .contiguous())
 
-        prem_hyp_attn = masked_softmax(similarity_matrix, mask)
+        # Softmax attention weights.
+        prem_hyp_attn = masked_softmax(similarity_matrix, hypothesis_mask)
         hyp_prem_attn = masked_softmax(similarity_matrix.transpose(1, 2)
                                                         .contiguous(),
-                                       mask.transpose(1, 2).contiguous())
+                                       premise_mask)
 
-        # TODO: compute the weighted sum of the encoded vectors of the premises
-        # and hypotheses with the softmax.
+        # Weighted sums of the hypotheses for the the premises attention,
+        # and vice-versa for the attention of the hypotheses.
+        attended_premises = weighted_sum(hypothesis_batch,
+                                         prem_hyp_attn,
+                                         premise_mask)
+        attended_hypotheses = weighted_sum(premise_batch,
+                                           hyp_prem_attn,
+                                           hypothesis_mask)
+
+        return attended_premises, attended_hypotheses
