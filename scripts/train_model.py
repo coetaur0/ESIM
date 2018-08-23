@@ -42,7 +42,7 @@ def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
         batch_start = time.time()
 
         # Move input and output data to the GPU if one is used.
-        premises = batch['premises'].to(device)
+        premises = batch['premise'].to(device)
         premise_lens = batch['premise_len'].to(device)
         hypotheses = batch['hypothesis'].to(device)
         hypothesis_lens = batch['hypothesis_len'].to(device)
@@ -62,9 +62,9 @@ def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
         if i % print_freq == 0:
             print("Epoch {}, batch {}:".format(epoch, i))
             print("\t* Avg. batch processing time: {:.4f}s"
-                  .format(batch_time_avg/i))
+                  .format(batch_time_avg/(i+1)))
             print("\t* Loss: {:.4f}"
-                  .format(running_loss/(i*dataloader.batch_size)))
+                  .format(running_loss/((i+1)*dataloader.batch_size)))
 
     epoch_time = time.time() - epoch_start
     epoch_loss = running_loss / len(dataloader)
@@ -83,32 +83,33 @@ def validate(dataloader, model, criterion, epoch, device, print_freq):
     running_loss = 0.0
     running_accuracy = 0.0
 
-    for i, batch in enumerate(dataloader):
-        batch_start = time.time()
+    with torch.no_grad():
+        for i, batch in enumerate(dataloader):
+            batch_start = time.time()
 
-        # Move input and output data to the GPU if one is used.
-        premises = batch['premises'].to(device)
-        premise_lens = batch['premise_len'].to(device)
-        hypotheses = batch['hypothesis'].to(device)
-        hypothesis_lens = batch['hypothesis_len'].to(device)
-        labels = batch['label'].to(device)
+            # Move input and output data to the GPU if one is used.
+            premises = batch['premise'].to(device)
+            premise_lens = batch['premise_len'].to(device)
+            hypotheses = batch['hypothesis'].to(device)
+            hypothesis_lens = batch['hypothesis_len'].to(device)
+            labels = batch['label'].to(device)
 
-        outputs = model(premises, premise_lens, hypotheses, hypothesis_lens)
-        loss = criterion(outputs, labels)
+            outputs = model(premises, premise_lens, hypotheses, hypothesis_lens)
+            loss = criterion(outputs, labels)
 
-        running_loss += loss.item()
-        running_accuracy += correct_preds(outputs, labels)
+            running_loss += loss.item()
+            running_accuracy += correct_preds(outputs, labels)
 
-        batch_time_avg += time.time() - batch_start
+            batch_time_avg += time.time() - batch_start
 
-        if i % print_freq == 0:
-            print("Epoch {}, batch {}:".format(epoch, i))
-            print("\t* Avg. batch processing time: {:.4f}s"
-                  .format(batch_time_avg/i))
-            print("\t* Loss: {:.4f}"
-                  .format(running_loss/(i*dataloader.batch_size)))
-            print("\t* Accuracy: {:.4f}"
-                  .format(running_accuracy/(i*dataloader.batch_size)))
+            if i % print_freq == 0:
+                print("Epoch {}, batch {}:".format(epoch, i))
+                print("\t* Avg. batch processing time: {:.4f}s"
+                  .format(batch_time_avg/(i+1)))
+                print("\t* Loss: {:.4f}"
+                  .format(running_loss/((i+1)*dataloader.batch_size)))
+                print("\t* Accuracy: {:.4f}%"
+                  .format((running_accuracy/((i+1)*dataloader.batch_size))*100))
 
     epoch_time = time.time() - epoch_start
     epoch_loss = running_loss / len(dataloader)

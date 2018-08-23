@@ -6,8 +6,8 @@ Definition of the ESIM model.
 import torch
 import torch.nn as nn
 
-from layers import Seq2seqEncoder, SoftmaxAttention
-from utils import get_mask, replace_masked
+from model.layers import Seq2seqEncoder, SoftmaxAttention
+from model.utils import get_mask, replace_masked
 
 
 class ESIM(nn.Module):
@@ -17,7 +17,7 @@ class ESIM(nn.Module):
     """
 
     def __init__(self, embeddings, hidden_size, padding_idx=0, num_classes=3,
-                 dropout=0.5):
+                 dropout=0.5, device="cpu"):
         """
         """
         super(ESIM, self).__init__()
@@ -26,6 +26,7 @@ class ESIM(nn.Module):
         self.hidden_size = hidden_size
         self.num_classes = num_classes
         self.dropout = dropout
+        self.device = device
 
         self._word_embedding = nn.Embedding(self.vocab_size,
                                             self.embedding_dim,
@@ -35,7 +36,8 @@ class ESIM(nn.Module):
         self._encoding = Seq2seqEncoder(nn.LSTM,
                                         self.embedding_dim,
                                         hidden_size,
-                                        bidirectional=True)
+                                        bidirectional=True,
+                                        device=device)
 
         self._attention = SoftmaxAttention()
 
@@ -47,7 +49,8 @@ class ESIM(nn.Module):
         self._composition = Seq2seqEncoder(nn.LSTM,
                                            self.hidden_size,
                                            self.hidden_size,
-                                           bidirectional=True)
+                                           bidirectional=True,
+                                           device=device)
 
         self._classification = nn.Sequential(nn.Dropout(p=self.dropout),
                                              nn.Linear(2*4*self.hidden_size,
@@ -61,13 +64,13 @@ class ESIM(nn.Module):
     def forward(self, premise, premise_len, hypothesis, hypothesis_len):
         """
         """
-        premise_mask = get_mask(premise, premise_len)
-        hypothesis_mask = get_mask(hypothesis, hypothesis_len)
+        premise_mask = get_mask(premise, premise_len).to(self.device)
+        hypothesis_mask = get_mask(hypothesis, hypothesis_len).to(self.device)
 
         embedded_premise = self._word_embedding(premise)
         embedded_hypothesis = self._word_embedding(hypothesis)
 
-        encoded_premise = self._encoding(embedded_premise, 
+        encoded_premise = self._encoding(embedded_premise,
                                          premise_len)
         encoded_hypothesis = self._encoding(embedded_hypothesis,
                                             hypothesis_len)

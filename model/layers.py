@@ -6,7 +6,7 @@ Definition of the layers of the ESIM model.
 import torch
 import torch.nn as nn
 
-from utils import sort_by_seq_len, masked_softmax, weighted_sum
+from model.utils import sort_by_seq_len, masked_softmax, weighted_sum
 
 
 class Seq2seqEncoder(nn.Module):
@@ -22,7 +22,8 @@ class Seq2seqEncoder(nn.Module):
     """
 
     def __init__(self, rnn_type, input_size, hidden_size,
-                 num_layers=1, bias=True, dropout=0, bidirectional=False):
+                 num_layers=1, bias=True, dropout=0.0, bidirectional=False,
+                 device="cpu"):
         """
         Args:
             rnn_type: The type of RNN to use as encoder in the module.
@@ -54,6 +55,7 @@ class Seq2seqEncoder(nn.Module):
         self.bias = bias
         self.dropout = dropout
         self.bidirectional = bidirectional
+        self.device = device
 
         self._encoder = rnn_type(input_size,
                                  hidden_size,
@@ -81,14 +83,17 @@ class Seq2seqEncoder(nn.Module):
         if self.rnn_type == nn.LSTM:
             return (torch.zeros(self.num_layers*num_directions,
                                 batch_size,
-                                self.hidden_size),
+                                self.hidden_size,
+                                dtype=torch.float).to(self.device),
                     torch.zeros(self.num_layers*num_directions,
                                 batch_size,
-                                self.hidden_size))
+                                self.hidden_size,
+                                dtype=torch.float).to(self.device))
 
         return (torch.zeros(self.num_layers*num_directions,
                             batch_size,
-                            self.hidden_size))
+                            self.hidden_size,
+                            dtype=torch.float).to(self.device))
 
     def forward(self, seq_batch, seq_lens):
         batch_size = seq_batch.shape[0]
