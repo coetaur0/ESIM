@@ -1,5 +1,5 @@
 """
-Dataset definition for the data that must be fed to the ESIM model.
+Dataset definition to feed data to the ESIM model.
 """
 # Aurelien Coet, 2018.
 

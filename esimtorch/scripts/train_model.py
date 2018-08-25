@@ -65,10 +65,10 @@ def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
         running_loss += loss.item()
 
         if i % print_freq == 0:
-            print("\t- Batch {}:".format(i))
-            print("\t\t* Avg. batch processing time: {:.4f}s"
+            print("\t* Batch {}:".format(i))
+            print("\t\t** Avg. batch processing time: {:.4f}s"
                   .format(batch_time_avg/(i+1)))
-            print("\t\t* Loss: {:.4f}"
+            print("\t\t** Loss: {:.4f}"
                   .format(running_loss/(i+1)))
 
     epoch_time = time.time() - epoch_start
@@ -77,7 +77,7 @@ def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
     return epoch_time, epoch_loss
 
 
-def validate(dataloader, model, criterion, epoch, device, print_freq):
+def validate(dataloader, model, criterion, epoch, device):
     """
     Compute the loss and accuracy of a model on a validation dataset.
 
@@ -88,8 +88,6 @@ def validate(dataloader, model, criterion, epoch, device, print_freq):
         criterion: A loss criterion to use for computing the loss.
         epoch: The number of the epoch for which validation is performed.
         device: The device on which the model is.
-        print_freq: An integer value indicating at which frequency validation
-            information must be printed out.
 
     Returns:
         epoch_time: The total time to compute the loss and accuracy on the
@@ -101,15 +99,12 @@ def validate(dataloader, model, criterion, epoch, device, print_freq):
     model.eval()
 
     epoch_start = time.time()
-    batch_time_avg = 0.0
     running_loss = 0.0
     running_accuracy = 0.0
 
     # Deactivate autograd for evaluation.
     with torch.no_grad():
-        for i, batch in enumerate(dataloader):
-            batch_start = time.time()
-
+        for batch in dataloader:
             # Move input and output data to the GPU if one is used.
             premises = batch['premise'].to(device)
             premise_lens = batch['premise_len'].to(device)
@@ -123,18 +118,6 @@ def validate(dataloader, model, criterion, epoch, device, print_freq):
 
             running_loss += loss.item()
             running_accuracy += correct_preds(outputs, labels)
-
-            batch_time_avg += time.time() - batch_start
-
-            if i % print_freq == 0:
-                print("\t- Batch {}:".format(i))
-                print("\t\t* Avg. batch processing time: {:.4f}s"
-                      .format(batch_time_avg/(i+1)))
-                print("\t\t* Loss: {:.4f}"
-                      .format(running_loss/(i+1)))
-                print("\t\t* Accuracy: {:.4f}%"
-                      .format((running_accuracy/((i+1)*dataloader.batch_size))
-                              * 100))
 
     epoch_time = time.time() - epoch_start
     epoch_loss = running_loss / len(dataloader)
@@ -161,23 +144,31 @@ def correct_preds(out_probs, targets):
     return correct.item()
 
 
-def main(train_file, valid_file, embeddings_file, target_dir, epochs,
-         batch_size, hidden_size, num_classes, dropout, patience, print_freq):
+def main(train_file, valid_file, embeddings_file, target_dir,
+         epochs=64, batch_size=32, hidden_size=300, num_classes=3,
+         dropout=0.5, patience=5, print_freq=1000, checkpoint=None):
+    """
+    """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    print("Training ESIM model on device: {}".format(device))
 
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
 
+    print("- Loading training data...")
     with open(train_file, 'rb') as pkl:
         train_data = NLIDataset(pickle.load(pkl))
 
     train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size)
 
+    print("- Loading validation data...")
     with open(valid_file, 'rb') as pkl:
         valid_data = NLIDataset(pickle.load(pkl))
 
     valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size)
 
+    print('- Building model...')
     with open(embeddings_file, 'rb') as pkl:
         embeddings = torch.tensor(pickle.load(pkl), dtype=torch.float)\
                      .to(device)
@@ -189,31 +180,44 @@ def main(train_file, valid_file, embeddings_file, target_dir, epochs,
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0004)
 
     best_score = 0.0
+    start_epoch = 0
+
+    # Continuing training if a checkpoint was given as argument.
+    if checkpoint:
+        checkpoint = torch.load(checkpoint)
+        start_epoch = checkpoint['epoch']
+        best_score = checkpoint['best_score']
+
+        print("- Loading pretrained model and continuing training from epoch\
+ {}...".format(start_epoch))
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+
     patience_counter = 0
     epochs_count = []
     train_losses = []
     valid_losses = []
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
         epochs_count.append(epoch)
-        print("Epoch: {}".format(epoch))
 
+        print("- Training epoch {}:".format(epoch))
         epoch_time, epoch_loss = train(train_loader, model, optimizer,
                                        criterion, epoch, device, print_freq)
 
         train_losses.append(epoch_loss)
-        print("-> Training time: {:.4f}s, training loss = {:.4f}"
+        print("-> Training time: {:.4f}s, loss = {:.4f}"
               .format(epoch_time, epoch_loss))
 
+        print("- Validation for epoch {}:".format(epoch))
         epoch_time, epoch_loss, epoch_accuracy = validate(valid_loader, model,
                                                           criterion, epoch,
-                                                          device,
-                                                          print_freq/2)
+                                                          device)
 
         valid_losses.append(epoch_loss)
-        print("-> Validation time: {:.4f}s, validation loss: {:.4f}"
-              .format(epoch_time, epoch_loss))
-        print("-> Accuracy: {:.4f}%".format((epoch_accuracy*100)))
+        print("-> Validation time: {:.4f}s, loss: {:.4f}, accuracy: {:.4f}%\n"
+              .format(epoch_time, epoch_loss, (epoch_accuracy*100)))
 
+        # Early stopping on validation accuracy.
         if epoch_accuracy < best_score:
             patience_counter += 1
         else:
@@ -226,7 +230,8 @@ def main(train_file, valid_file, embeddings_file, target_dir, epochs,
                        os.path.join(target_dir, "esim_{}.pth.tar"
                                                 .format(epoch)))
 
-        if patience_counter == patience:
+        if patience_counter >= patience:
+            print("-> Early stopping: patience limit reached, stopping...")
             break
 
     plt.figure()
@@ -268,9 +273,12 @@ if __name__ == "__main__":
     parser.add_argument('--print_freq', default=1000, type=int,
                         help='The number of batches after which information\
  must be printed during training')
+    parser.add_argument('--checkpoint', default=None, help='The path to a\
+ checkpoint that must be used to resume training')
 
     args = parser.parse_args()
 
     main(args.train_file, args.valid_file, args.embeddings_file,
          args.target_dir, args.epochs, args.batch_size, args.hidden_size,
-         args.num_classes, args.dropout, args.patience, args.print_freq)
+         args.num_classes, args.dropout, args.patience, args.print_freq,
+         args.checkpoint)
