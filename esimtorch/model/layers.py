@@ -6,7 +6,7 @@ Definition of the layers of the ESIM model.
 import torch
 import torch.nn as nn
 
-from model.utils import sort_by_seq_len, masked_softmax, weighted_sum
+from .utils import sort_by_seq_len, masked_softmax, weighted_sum
 
 
 class Seq2seqEncoder(nn.Module):

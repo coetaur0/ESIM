@@ -6,8 +6,8 @@ Definition of the ESIM model.
 import torch
 import torch.nn as nn
 
-from model.layers import Seq2seqEncoder, SoftmaxAttention
-from model.utils import get_mask, replace_masked
+from .layers import Seq2seqEncoder, SoftmaxAttention
+from .utils import get_mask, replace_masked
 
 
 class ESIM(nn.Module):
@@ -59,7 +59,7 @@ class ESIM(nn.Module):
                                              nn.Dropout(p=self.dropout),
                                              nn.Linear(self.hidden_size,
                                                        self.num_classes),
-                                             nn.Softmax())
+                                             nn.Softmax(dim=-1))
 
     def forward(self, premise, premise_len, hypothesis, hypothesis_len):
         """

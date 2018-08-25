@@ -68,21 +68,26 @@ def download_unzip(url, targetdir):
         unzip(filepath)
     # Skip download and unzipping if the unzipped data is already available.
     else:
-        print("\t* Found unzipped data for {} - skipping download and unzipping"
+        print("\t* Found unzipped data for {} - skipping download and unzip"
               .format(targetdir))
 
 
 if __name__ == "__main__":
-    data_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            "..", "data")
+    import argparse
 
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    parser = argparse.ArgumentParser(description='Download the SNLI dataset')
+    parser.add_argument('target_dir', default=os.path.join('..', '..', 'data'),
+                        help='Path to a dir. where the data must be saved')
+
+    args = parser.parse_args()
+
+    if not os.path.exists(args.target_dir):
+        os.makedirs(args.target_dir)
 
     snli_url = "https://nlp.stanford.edu/projects/snli/snli_1.0.zip"
     print(20*'=' + "Fetching the SNLI data:" + 20*'=')
-    download_unzip(snli_url, os.path.join(data_dir, "snli"))
+    download_unzip(snli_url, os.path.join(args.target_dir, "snli"))
 
     glove_url = "http://www-nlp.stanford.edu/data/glove.840B.300d.zip"
     print(20*'=' + "Fetching the GloVe data:" + 20*'=')
-    download_unzip(glove_url, os.path.join(data_dir, "glove"))
+    download_unzip(glove_url, os.path.join(args.target_dir, "glove"))
