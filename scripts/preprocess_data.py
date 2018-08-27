@@ -1,23 +1,25 @@
 """
-Preprocess the data for the ESIM model.
+Preprocess the downloaded dataset and word embeddings for the ESIM model.
 """
 # Aurelien Coet, 2018.
 
 import os
 import pickle
 import string
+import fnmatch
 import numpy as np
 from collections import Counter
 
 
 def read_data(filepath, lower=False, ignore_punct=True):
     """
-    Read the premises, hypotheses and labels from a file in the SNLI
+    Read the premises, hypotheses and labels from a file in some NLI
     dataset and return them in a dictionary.
 
     Args:
         filepath: The path to the file containing the premises, hypotheses
-            and labels that must be read.
+            and labels that must be read. The file should be in the same
+            form as the SNLI dataset (or MultiNLI).
         lower: Boolean indicating whether the words in the premises and
             hypotheses must be lowercased.
         ignore_punct: Boolean indicating whether to ignore punctuation in
@@ -70,9 +72,9 @@ def build_worddict(data, num_words=None):
     hypotheses to indices.
 
     Args:
-        data: A dictionary with at least two elements that are lists
-            of lists containing words and that have 'premises' and
-            'hypotheses' as keys.
+        data: A dictionary containing the premises and hypotheses for which
+            a worddict must be built. The dictionary should have been built
+            by the read_data function of this module.
         num_words: Integer indicating the maximum number of words to
             keep in the worddict. If specified, only the 'num_words' most
             frequent words will be kept. If set to None, all words are
@@ -166,8 +168,9 @@ def build_embedding_matrix(worddict, embeddings_file):
         embeddings_file: A file containing pretrained word embeddings.
 
     Returns:
-        A numpy matrix of size (num_words x embedding_dim) containing
-        pretrained word embeddings.
+        A numpy matrix of size (num_words+2 x embedding_dim) containing
+        pretrained word embeddings (the +2 is for the padding and
+        out-of-vocabulary tokens).
     """
     # Load the word embeddings in a dictionnary.
     embeddings = {}
@@ -206,9 +209,9 @@ def build_embedding_matrix(worddict, embeddings_file):
     return embedding_matrix
 
 
-def preprocess_SNLI(inputdir, targetdir, embeddings_file):
+def preprocess_NLI(inputdir, targetdir, embeddings_file):
     """
-    Preprocess the data from the SNLI corpus so it can be used by the
+    Preprocess the data from some NLI corpus so it can be used by the
     ESIM model.
     Compute a worddict from the train set, and transform the words in
     the sentences of the corpus to their indices, as well as the labels.
@@ -216,7 +219,7 @@ def preprocess_SNLI(inputdir, targetdir, embeddings_file):
     The preprocessed data is saved in pickled form in some target directory.
 
     Args:
-        inputdir: The path to the directory containing the SNLI corpus.
+        inputdir: The path to the directory containing the NLI corpus.
         targetdir: The path to the directory where the preprocessed data
             must be saved.
         embedding_file: The path to the file containing the pretrained
@@ -225,9 +228,20 @@ def preprocess_SNLI(inputdir, targetdir, embeddings_file):
     if not os.path.exists(targetdir):
         os.makedirs(targetdir)
 
+    train_file = ""
+    dev_file = ""
+    test_file = ""
+    for file in os.listdir(inputdir):
+        if fnmatch.fnmatch(file, '*_train.txt'):
+            train_file = file
+        elif fnmatch.fnmatch(file, '*_dev.txt'):
+            dev_file = file
+        elif fnmatch.fnmatch(file, '*_test.txt'):
+            test_file = file
+
     print(20*"=", " Preprocessing train set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, "snli_1.0_train.txt"))
+    data = read_data(os.path.join(inputdir, train_file))
 
     print("\t* Computing worddict and saving it...")
     worddict = build_worddict(data)
@@ -238,27 +252,27 @@ def preprocess_SNLI(inputdir, targetdir, embeddings_file):
     labeldict = {"entailment": 0, "neutral": 1, "contradiction": 2}
     transformed_data = transform_to_indices(data, worddict, labeldict)
     print("\t* Saving result...")
-    with open(os.path.join(targetdir, "snli_train.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "train_data.pkl"), 'wb') as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
     print(20*"=", " Preprocessing dev set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, "snli_1.0_dev.txt"))
+    data = read_data(os.path.join(inputdir, dev_file))
 
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = transform_to_indices(data, worddict, labeldict)
     print("\t* Saving result...")
-    with open(os.path.join(targetdir, "snli_dev.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "dev_data.pkl"), 'wb') as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
     print(20*"=", " Preprocessing test set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, "snli_1.0_test.txt"))
+    data = read_data(os.path.join(inputdir, test_file))
 
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = transform_to_indices(data, worddict, labeldict)
     print("\t* Saving result...")
-    with open(os.path.join(targetdir, "snli_test.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "test_data.pkl"), 'wb') as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
     print(20*"=", " Preprocessing embeddings ", 20*"=")
@@ -271,13 +285,14 @@ def preprocess_SNLI(inputdir, targetdir, embeddings_file):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Preprocess the SNLI dataset\
+    parser = argparse.ArgumentParser(description='Preprocess some NLI dataset\
  for ESIM')
-    parser.add_argument('snli_dir', help='Path to the SNLI dataset')
+    parser.add_argument('data_dir', help='Path to the NLI dataset to\
+ preprocess')
     parser.add_argument('target_dir', help='Path to the directory where the\
  preprocessed data must be saved')
     parser.add_argument('embeddings_file', help='Path to a file containing\
  pretrained word embeddings')
     args = parser.parse_args()
 
-    preprocess_SNLI(args.snli_dir, args.target_dir, args.embeddings_file)
+    preprocess_NLI(args.data_dir, args.target_dir, args.embeddings_file)

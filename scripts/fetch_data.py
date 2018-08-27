@@ -1,11 +1,14 @@
 """
-Fetch the following data for the ESIM model:
+Fetch datasets and pretrained word embeddings for the ESIM model.
+
+By default, the script downloads the following.
     - The SNLI corpus;
-    - GloVe word embeddings.
+    - GloVe word embeddings (840B - 300d).
 """
 # Aurelien Coet, 2018.
 
 import os
+import argparse
 import zipfile
 import wget
 
@@ -18,7 +21,7 @@ def download(url, targetdir):
         url: The url from which the file must be downloaded.
         targetdir: The path to the directory where the file must be saved.
     """
-    print("\t* Downloading data from {}".format(url))
+    print("* Downloading data from {}".format(url))
     filepath = os.path.join(targetdir, url.split('/')[-1])
     wget.download(url, filepath)
     return filepath
@@ -31,7 +34,7 @@ def unzip(filepath):
     Args:
         filepath: The path to the zipped file.
     """
-    print("\n\t* Extracting: {}".format(filepath))
+    print("\n* Extracting: {}".format(filepath))
     dirpath = os.path.dirname(filepath)
     with zipfile.ZipFile(filepath) as zf:
         for name in zf.namelist():
@@ -64,19 +67,24 @@ def download_unzip(url, targetdir):
         unzip(download(url, targetdir))
     # Skip downloading if the zipped data is already available.
     elif os.path.exists(filepath):
-        print("\t* Found zipped data - skipping download")
+        print("* Found zipped data - skipping download")
         unzip(filepath)
     # Skip download and unzipping if the unzipped data is already available.
     else:
-        print("\t* Found unzipped data for {} - skipping download and unzip"
+        print("* Found unzipped data for {} - skipping download and unzip"
               .format(targetdir))
 
 
 if __name__ == "__main__":
-    import argparse
+    snli_url = "https://nlp.stanford.edu/projects/snli/snli_1.0.zip"
+    glove_url = "http://www-nlp.stanford.edu/data/glove.840B.300d.zip"
 
     parser = argparse.ArgumentParser(description='Download the SNLI dataset')
-    parser.add_argument('target_dir', default=os.path.join('..', '..', 'data'),
+    parser.add_argument('--dataset_url', default=snli_url,
+                        help='URL of the dataset to download')
+    parser.add_argument('--embeddings_url', default=glove_url,
+                        help='URL of the pretrained embeddings to download')
+    parser.add_argument('--target_dir', default=os.path.join('..', 'data'),
                         help='Path to a dir. where the data must be saved')
 
     args = parser.parse_args()
@@ -84,10 +92,12 @@ if __name__ == "__main__":
     if not os.path.exists(args.target_dir):
         os.makedirs(args.target_dir)
 
-    snli_url = "https://nlp.stanford.edu/projects/snli/snli_1.0.zip"
-    print(20*'=' + "Fetching the SNLI data:" + 20*'=')
-    download_unzip(snli_url, os.path.join(args.target_dir, "snli"))
+    print(20*'=', "Fetching the dataset from {}:".format(args.dataset_url),
+          20*'=')
+    download_unzip(args.dataset_url, os.path.join(args.target_dir, "dataset"))
 
-    glove_url = "http://www-nlp.stanford.edu/data/glove.840B.300d.zip"
-    print(20*'=' + "Fetching the GloVe data:" + 20*'=')
-    download_unzip(glove_url, os.path.join(args.target_dir, "glove"))
+    print(20*'=',
+          "Fetching the word embeddings from {}:".format(args.embeddings_url),
+          20*'=')
+    download_unzip(args.embeddings_url,
+                   os.path.join(args.target_dir, "embeddings"))

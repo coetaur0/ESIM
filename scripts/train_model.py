@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 
 from torch.utils.data import DataLoader
-from esimtorch.model.dataset import NLIDataset
-from esimtorch.model.esim import ESIM
+from esim.dataset import NLIDataset
+from esim.model import ESIM
 
 
 def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
@@ -121,8 +121,7 @@ def validate(dataloader, model, criterion, epoch, device):
 
     epoch_time = time.time() - epoch_start
     epoch_loss = running_loss / len(dataloader)
-    epoch_accuracy = running_accuracy / (len(dataloader) *
-                                         dataloader.batch_size)
+    epoch_accuracy = running_accuracy / (len(dataloader.dataset))
 
     return epoch_time, epoch_loss, epoch_accuracy
 

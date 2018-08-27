@@ -9,9 +9,7 @@ setup(name='ESIMtorch',
       author_email='aurelien.coet19@gmail.com',
       description='Implementation in Pytorch of the ESIM model for NLI',
       packages=[
-        'esimtorch',
-        'esimtorch.model',
-        'esimtorch.scripts'
+        'esim'
       ],
       install_requires=[
         'numpy',

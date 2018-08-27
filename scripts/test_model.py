@@ -9,8 +9,8 @@ import argparse
 import torch
 
 from torch.utils.data import DataLoader
-from esimtorch.model.dataset import NLIDataset
-from esimtorch.model.esim import ESIM
+from esim.dataset import NLIDataset
+from esim.model import ESIM
 
 
 def correct_preds(out_probs, targets):
@@ -72,7 +72,7 @@ def test(dataloader, model, device):
 
     batch_time /= len(dataloader)
     total_time = time.time() - time_start
-    accuracy /= (len(dataloader) * dataloader.batch_size)
+    accuracy /= (len(dataloader.dataset))
 
     return batch_time, total_time, accuracy
 
