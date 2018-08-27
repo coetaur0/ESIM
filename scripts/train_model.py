@@ -147,6 +147,29 @@ def main(train_file, valid_file, embeddings_file, target_dir,
          epochs=64, batch_size=32, hidden_size=300, num_classes=3,
          dropout=0.5, patience=5, print_freq=1000, checkpoint=None):
     """
+    Train the ESIM model on some dataset.
+
+    Args:
+        train_file: A path to some preprocessed dataset that must be used
+            to train the model.
+        valid_file: A path to some preprocessed dataset that must be used
+            to validate the model.
+        embeddings_file: A path to some preprocessed word embeddings that
+            must be used to initialise the model.
+        target_dir: The path to a directory where the trained model must
+            be saved.
+        epochs: The maximum number of epochs for training. Defaults to 64.
+        batch_size: The size of the batches for training. Defaults to 32.
+        hidden_size: The size of the hidden layers in the model. Defaults
+            to 300.
+        num_classes: The number of classes in the output of the model.
+            Defaults to 3.
+        dropout: The dropout rate to use in the model. Defaults to 0.5.
+        patience: The patience to use for early stopping. Defaults to 5.
+        print_freq: The frequency at which training information must be
+            printed out.
+        checkpoint: A checkpoint from which to continue training. If None,
+            training starts from scratch. Defaults to None.
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

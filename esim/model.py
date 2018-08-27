@@ -19,6 +19,19 @@ class ESIM(nn.Module):
     def __init__(self, embeddings, hidden_size, padding_idx=0, num_classes=3,
                  dropout=0.5, device="cpu"):
         """
+        Args:
+            embeddings: A tensor of size (vocab_size, embedding_dim) containing
+                pretrained word embeddings.
+            hidden_size: The size of the hidden layers in the network.
+            padding_idx: The index of the padding token in the premises and
+                hypotheses passed as input to the model. Defaults to 0.
+            num_classes: The number of classes in the output of the network.
+                Defaults to 3.
+            dropout: The dropout rate to use on the outputs of the feedforward
+                layers of the network. Defaults to 0.5. A dropout rate of 0
+                corresponds to using no dropout at all.
+            device: The device on which the model is executed. Defaults to 
+                'cpu'. 
         """
         super(ESIM, self).__init__()
 
@@ -32,6 +45,8 @@ class ESIM(nn.Module):
                                             self.embedding_dim,
                                             padding_idx=padding_idx,
                                             _weight=embeddings)
+
+        self._encoder_dropout = nn.Dropout(p=dropout)
 
         self._encoding = Seq2seqEncoder(nn.LSTM,
                                         self.embedding_dim,
@@ -63,12 +78,30 @@ class ESIM(nn.Module):
 
     def forward(self, premise, premise_len, hypothesis, hypothesis_len):
         """
+        Args:
+            premise: A batch of varaible length sequences of word indices
+                representing premises. The batch is assumed to be of size
+                (batch, max_premise_len).
+            premise_len: A 1D tensor containing the lengths of the premises
+                in 'premise'.
+            hypothesis: A batch of varaible length sequences of word indices
+                representing hypotheses. The batch is assumed to be of size
+                (batch, max_hypothesis_len).
+            premise_len: A 1D tensor containing the lengths of the hypotheses
+                in 'hypothesis'.
+
+        Returns:
+            A tensor of size (batch, num_classes) containing the probability
+            of each class.
         """
         premise_mask = get_mask(premise, premise_len).to(self.device)
         hypothesis_mask = get_mask(hypothesis, hypothesis_len).to(self.device)
 
         embedded_premise = self._word_embedding(premise)
         embedded_hypothesis = self._word_embedding(hypothesis)
+
+        embedded_premise = self._encoder_dropout(embedded_premise)
+        embedded_hypothesis = self._encoder_dropout(embedded_hypothesis)
 
         encoded_premise = self._encoding(embedded_premise,
                                          premise_len)

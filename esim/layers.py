@@ -96,6 +96,17 @@ class Seq2seqEncoder(nn.Module):
                             dtype=torch.float).to(self.device))
 
     def forward(self, seq_batch, seq_lens):
+        """
+        Args:
+            seq_batch: A batch of variable length sequences of vectors. The
+                batch is assumed to have the size (batch, seqs, vector_dim).
+            seq_lens: A 1D tensor containing the sizes of the sequences in
+                the input batch.
+        
+        Returns:
+            reordered_outputs: The outputs of the encoder for the sequences
+                in the batch, in the same order as the input.
+        """
         batch_size = seq_batch.shape[0]
 
         sorted_batch, sorted_lens, _, restoration_idx =\
@@ -126,6 +137,27 @@ class SoftmaxAttention(nn.Module):
 
     def forward(self, premise_batch, premise_mask, hypothesis_batch,
                 hypothesis_mask):
+        """
+        Args:
+            premise_batch: A batch of sequences of vectors representing the
+                premises in some NLI task. The batch is assumed to have the
+                size (batch, sequences, vector_dim).
+            premise_mask: A mask for the sequences in the premise batch, to
+                ignore padding in the sequences during the computation of
+                the attention.
+            hypothesis_batch: A batch of sequences of vectors representing the
+                hypotheses in some NLI task. The batch is assumed to have the
+                size (batch, sequences, vector_dim).
+            hypothesis_mask: A mask for the sequences in the hypotheses batch,
+                to ignore padding in the sequences during the computation of
+                the attention.
+        
+        Returns:
+            attended_premises: The sequences of attention vectors for the
+                premises in the input batch.
+            attended_hypotheses: The sequences of attention vectors for the
+                hypotheses in the input batch.
+        """
         # Dot product between premises and hypotheses in each sequence of
         # the batch.
         similarity_matrix = premise_batch.bmm(hypothesis_batch.transpose(2, 1)

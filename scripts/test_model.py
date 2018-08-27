@@ -78,7 +78,22 @@ def test(dataloader, model, device):
 
 
 def main(test_file, embeddings_file, pretrained_file, batch_size=32,
-         hidden_size=300, num_classes=3, dropout=0.5):
+         hidden_size=300, num_classes=3):
+    """
+    Test the ESIM model with pretrained weights on some dataset.
+
+    Args:
+        test_file: The path to a file containing preprocessed NLI data.
+        embeddings_file: The path to a file containing preprocessed word
+            embeddings.
+        pretrained_file: The path to a checkpoint produced by the
+            'train_model' script.
+        batch_size: The size of the batches used for testing. Defaults to 32.
+        hidden_size: The size of the hidden layers in the model. Must match
+            the size used during training. Defaults to 300.
+        num_classes: The number of classes in the output of the model. Must
+            match the value used during training. Defaults to 3.
+    """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     print("Testing ESIM model on device: {}".format(device))
@@ -95,7 +110,7 @@ def main(test_file, embeddings_file, pretrained_file, batch_size=32,
                      .to(device)
 
     model = ESIM(embeddings, hidden_size, num_classes=num_classes,
-                 dropout=dropout, device=device).to(device)
+                 device=device).to(device)
 
     checkpoint = torch.load(pretrained_file)
     model.load_state_dict(checkpoint['state_dict'])
@@ -124,10 +139,8 @@ if __name__ == "__main__":
  hidden size to use for the layers in the model')
     parser.add_argument('--num_classes', default=3, type=int, help='The number\
  of classes in the targets')
-    parser.add_argument('--dropout', default=0.5, type=float,
-                        help='The dropout rate to use in the model')
 
     args = parser.parse_args()
 
     main(args.test_file, args.embeddings_file, args.pretrained_file,
-         args.batch_size, args.hidden_size, args.num_classes, args.dropout)
+         args.batch_size, args.hidden_size, args.num_classes)
