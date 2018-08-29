@@ -6,7 +6,7 @@ Definition of the ESIM model.
 import torch
 import torch.nn as nn
 
-from .layers import Seq2seqEncoder, SoftmaxAttention
+from .layers import RNNDropout, Seq2seqEncoder, SoftmaxAttention
 from .utils import get_mask, replace_masked
 
 
@@ -46,7 +46,7 @@ class ESIM(nn.Module):
                                             padding_idx=padding_idx,
                                             _weight=embeddings)
 
-        self._encoder_dropout = nn.Dropout(p=dropout)
+        self._rnn_dropout = RNNDropout(p=dropout)
 
         self._encoding = Seq2seqEncoder(nn.LSTM,
                                         self.embedding_dim,
@@ -58,8 +58,7 @@ class ESIM(nn.Module):
 
         self._projection = nn.Sequential(nn.Linear(4*2*self.hidden_size,
                                                    self.hidden_size),
-                                         nn.ReLU(),
-                                         nn.Dropout(p=self.dropout))
+                                         nn.ReLU())
 
         self._composition = Seq2seqEncoder(nn.LSTM,
                                            self.hidden_size,
@@ -75,6 +74,9 @@ class ESIM(nn.Module):
                                              nn.Linear(self.hidden_size,
                                                        self.num_classes),
                                              nn.Softmax(dim=-1))
+
+        # Initialize all weights and biases in the model.
+        self.apply(_init_weights)
 
     def forward(self, premise, premise_len, hypothesis, hypothesis_len):
         """
@@ -100,8 +102,8 @@ class ESIM(nn.Module):
         embedded_premise = self._word_embedding(premise)
         embedded_hypothesis = self._word_embedding(hypothesis)
 
-        embedded_premise = self._encoder_dropout(embedded_premise)
-        embedded_hypothesis = self._encoder_dropout(embedded_hypothesis)
+        embedded_premise = self._rnn_dropout(embedded_premise)
+        embedded_hypothesis = self._rnn_dropout(embedded_hypothesis)
 
         encoded_premise = self._encoding(embedded_premise,
                                          premise_len)
@@ -128,6 +130,9 @@ class ESIM(nn.Module):
         projected_premise = self._projection(enhanced_premise)
         projected_hypothesis = self._projection(enhanced_hypothesis)
 
+        projected_premise = self._rnn_dropout(projected_premise)
+        projected_hypothesis = self._rnn_dropout(projected_hypothesis)
+
         v_ai = self._composition(projected_premise, premise_len)
         v_bj = self._composition(projected_hypothesis, hypothesis_len)
 
@@ -144,3 +149,24 @@ class ESIM(nn.Module):
         v = torch.cat([v_a_avg, v_a_max, v_b_avg, v_b_max], dim=1)
 
         return self._classification(v)
+
+
+def _init_weights(module):
+    if isinstance(module, nn.Linear):
+        nn.init.xavier_uniform_(module.weight.data)
+        nn.init.constant_(module.bias.data, 0.0)
+
+    elif isinstance(module, nn.LSTM):
+        nn.init.xavier_uniform_(module.weight_ih_l0.data)
+        nn.init.orthogonal_(module.weight_hh_l0.data)
+        nn.init.constant_(module.bias_ih_l0.data, 0.0)
+        nn.init.constant_(module.bias_hh_l0.data, 0.0)
+        hidden_size = module.bias_hh_l0.data.shape[0] // 4
+        module.bias_hh_l0.data[hidden_size:(2*hidden_size)] = 1.0
+
+        if (module.bidirectional):
+            nn.init.xavier_uniform_(module.weight_ih_l0_reverse.data)
+            nn.init.orthogonal_(module.weight_hh_l0_reverse.data)
+            nn.init.constant_(module.bias_ih_l0_reverse.data, 0.0)
+            nn.init.constant_(module.bias_hh_l0_reverse.data, 0.0)
+            module.bias_hh_l0_reverse.data[hidden_size:(2*hidden_size)] = 1.0

@@ -92,12 +92,12 @@ if __name__ == "__main__":
     if not os.path.exists(args.target_dir):
         os.makedirs(args.target_dir)
 
-    print(20*'=', "Fetching the dataset from {}:".format(args.dataset_url),
+    print(20*'=', "Fetching the dataset:".format(args.dataset_url),
           20*'=')
     download_unzip(args.dataset_url, os.path.join(args.target_dir, "dataset"))
 
     print(20*'=',
-          "Fetching the word embeddings from {}:".format(args.embeddings_url),
+          "Fetching the word embeddings:".format(args.embeddings_url),
           20*'=')
     download_unzip(args.embeddings_url,
                    os.path.join(args.target_dir, "embeddings"))

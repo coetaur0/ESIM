@@ -11,7 +11,7 @@ import numpy as np
 from collections import Counter
 
 
-def read_data(filepath, lower=False, ignore_punct=True):
+def read_data(filepath, lower=False, ignore_punct=False):
     """
     Read the premises, hypotheses and labels from a file in some NLI
     dataset and return them in a dictionary.
@@ -244,7 +244,7 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file):
     data = read_data(os.path.join(inputdir, train_file))
 
     print("\t* Computing worddict and saving it...")
-    worddict = build_worddict(data)
+    worddict = build_worddict(data, num_words=42394)
     with open(os.path.join(targetdir, "worddict.pkl"), 'wb') as pkl_file:
         pickle.dump(worddict, pkl_file)
 

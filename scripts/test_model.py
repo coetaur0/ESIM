@@ -102,7 +102,7 @@ def main(test_file, embeddings_file, pretrained_file, batch_size=32,
     with open(test_file, 'rb') as pkl:
         test_data = NLIDataset(pickle.load(pkl))
 
-    test_loader = DataLoader(test_data, shuffle=True, batch_size=batch_size)
+    test_loader = DataLoader(test_data, shuffle=False, batch_size=batch_size)
 
     print("- Building model...")
     with open(embeddings_file, 'rb') as pkl:

@@ -17,7 +17,8 @@ from esim.dataset import NLIDataset
 from esim.model import ESIM
 
 
-def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
+def train(dataloader, model, optimizer, criterion, epoch, max_grad_norm,
+          device, print_freq):
     """
     Train a model for one epoch on some input data with a given optimizer and
     criterion.
@@ -28,6 +29,7 @@ def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
         optimizer: A torch optimizer to use for training on the input model.
         criterion: A loss criterion to use for training.
         epoch: The number of the epoch for which training is performed.
+        max_grad_norm: Max. norm for gradient norm clipping.
         device: A device on which training must be performed.
         print_freq: An integer value indicating at which frequency training
             information must be printed out.
@@ -59,6 +61,7 @@ def train(dataloader, model, optimizer, criterion, epoch, device, print_freq):
         loss = criterion(outputs, labels)
         loss.backward()
 
+        nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
         optimizer.step()
 
         batch_time_avg += time.time() - batch_start
@@ -145,7 +148,8 @@ def correct_preds(out_probs, targets):
 
 def main(train_file, valid_file, embeddings_file, target_dir,
          epochs=64, batch_size=32, hidden_size=300, num_classes=3,
-         dropout=0.5, patience=5, print_freq=1000, checkpoint=None):
+         dropout=0.5, patience=5, max_grad_norm=10.0, print_freq=1000,
+         checkpoint=None):
     """
     Train the ESIM model on some dataset.
 
@@ -188,7 +192,7 @@ def main(train_file, valid_file, embeddings_file, target_dir,
     with open(valid_file, 'rb') as pkl:
         valid_data = NLIDataset(pickle.load(pkl))
 
-    valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size)
+    valid_loader = DataLoader(valid_data, shuffle=False, batch_size=batch_size)
 
     print('- Building model...')
     with open(embeddings_file, 'rb') as pkl:
@@ -224,7 +228,8 @@ def main(train_file, valid_file, embeddings_file, target_dir,
 
         print("- Training epoch {}:".format(epoch))
         epoch_time, epoch_loss = train(train_loader, model, optimizer,
-                                       criterion, epoch, device, print_freq)
+                                       criterion, epoch, max_grad_norm,
+                                       device, print_freq)
 
         train_losses.append(epoch_loss)
         print("-> Training time: {:.4f}s, loss = {:.4f}"
@@ -275,7 +280,7 @@ if __name__ == "__main__":
     parser.add_argument('embeddings_file', help='A path to a file containing\
  some preprocessed word embeddings')
 
-    parser.add_argument('--target_dir', default=os.path.join('..', '..',
+    parser.add_argument('--target_dir', default=os.path.join('..',
                                                              'data',
                                                              'pretrained'),
                         help='The path to the directory where the trained\
@@ -290,6 +295,8 @@ if __name__ == "__main__":
  of classes in the targets')
     parser.add_argument('--dropout', default=0.5, type=float,
                         help='The dropout rate to use in the model')
+    parser.add_argument('--max_grad_norm', default=10.0, type=float,
+                        help='Max. gradient norm for gradient clipping')
     parser.add_argument('--patience', default=5, type=int, help='The patience\
  to use during training for early stopping')
     parser.add_argument('--print_freq', default=1000, type=int,
@@ -302,5 +309,5 @@ if __name__ == "__main__":
 
     main(args.train_file, args.valid_file, args.embeddings_file,
          args.target_dir, args.epochs, args.batch_size, args.hidden_size,
-         args.num_classes, args.dropout, args.patience, args.print_freq,
-         args.checkpoint)
+         args.num_classes, args.dropout, args.patience, args.max_grad_norm,
+         args.print_freq, args.checkpoint)

@@ -9,6 +9,33 @@ import torch.nn as nn
 from .utils import sort_by_seq_len, masked_softmax, weighted_sum
 
 
+# Class inspired from:
+# https://github.com/allenai/allennlp/blob/master/allennlp/modules/input_variational_dropout.py
+class RNNDropout(nn.Dropout):
+    """
+    Dropout layer for the inputs of RNNs.
+
+    Apply the same dropout mask to all the elements of the same sequence in
+    a batch of sequences of size (batch, seq_len, embedding_dim).
+    """
+
+    def forward(self, seq_batch):
+        """
+        Apply dropout to the input batch of sequences.
+
+        Args:
+            seq_batch: A batch of sequences that will serve as input to
+                an RNN. Tensor of size (batch, seq_len, emebdding_dim).
+
+        Returns:
+            A new tensor where dropout has been applied.
+        """
+        ones = seq_batch.data.new_ones(seq_batch.shape[0], seq_batch.shape[-1])
+        dropout_mask = nn.functional.dropout(ones, self.p, self.training,
+                                             inplace=False)
+        return dropout_mask.unsqueeze(1) * seq_batch
+
+
 class Seq2seqEncoder(nn.Module):
     """
     RNN taking variable length padded sequences of vectors as input and
@@ -102,7 +129,7 @@ class Seq2seqEncoder(nn.Module):
                 batch is assumed to have the size (batch, seqs, vector_dim).
             seq_lens: A 1D tensor containing the sizes of the sequences in
                 the input batch.
-        
+
         Returns:
             reordered_outputs: The outputs of the encoder for the sequences
                 in the batch, in the same order as the input.
@@ -151,7 +178,7 @@ class SoftmaxAttention(nn.Module):
             hypothesis_mask: A mask for the sequences in the hypotheses batch,
                 to ignore padding in the sequences during the computation of
                 the attention.
-        
+
         Returns:
             attended_premises: The sequences of attention vectors for the
                 premises in the input batch.
