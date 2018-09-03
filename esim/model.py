@@ -69,7 +69,7 @@ class ESIM(nn.Module):
         self._classification = nn.Sequential(nn.Dropout(p=self.dropout),
                                              nn.Linear(2*4*self.hidden_size,
                                                        self.hidden_size),
-                                             nn.Tanh(),
+                                             nn.ReLU(),
                                              nn.Dropout(p=self.dropout),
                                              nn.Linear(self.hidden_size,
                                                        self.num_classes),

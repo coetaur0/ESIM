@@ -67,7 +67,6 @@ def test(dataloader, model, device):
                             hypotheses, hypothesis_lens)
 
             accuracy += correct_preds(outputs, labels)
-
             batch_time += time.time() - batch_start
 
     batch_time /= len(dataloader)

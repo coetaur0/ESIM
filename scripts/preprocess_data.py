@@ -32,8 +32,10 @@ def read_data(filepath, lower=False, ignore_punct=False):
     with open(filepath, 'r') as input_data:
         premises, hypotheses, labels = [], [], []
 
-        # Translation table to remove punctuation from strings.
-        table = str.maketrans({key: None for key in string.punctuation})
+        # Translation tables to remove parentheses and punctuation from
+        # strings.
+        parentheses_table = str.maketrans({'(': None, ')': None})
+        punct_table = str.maketrans({key: ' ' for key in string.punctuation})
 
         # Ignore the headers on the first line in the SNLI file.
         next(input_data)
@@ -45,16 +47,20 @@ def read_data(filepath, lower=False, ignore_punct=False):
             if line[0] == '-':
                 continue
 
-            premise = line[5]
-            hypothesis = line[6]
+            premise = line[1]
+            hypothesis = line[2]
+
+            # Remove '(' and ')' from the premises and hypotheses.
+            premise = premise.translate(parentheses_table)
+            hypothesis = hypothesis.translate(parentheses_table)
 
             if lower:
                 premise = premise.lower()
                 hypothesis = hypothesis.lower()
 
             if ignore_punct:
-                premise = premise.translate(table)
-                hypothesis = hypothesis.translate(table)
+                premise = premise.translate(punct_table)
+                hypothesis = hypothesis.translate(punct_table)
 
             # Each premise and hypothesis is split into a list of words.
             premises.append(premise.rstrip().split())
@@ -91,11 +97,14 @@ def build_worddict(data, num_words=None):
     if num_words is None:
         num_words = len(counts)
 
-    worddict = {word[0]: i+2
+    worddict = {word[0]: i+4
                 for i, word in enumerate(counts.most_common(num_words))}
-    # Special indices are used for padding and out-of-vocabulary words.
+    # Special indices are used for padding, out-of-vocabulary words, and
+    # beginning and end of sentence tokens.
     worddict["_PAD_"] = 0
     worddict["_OOV_"] = 1
+    worddict["_BOS_"] = 2
+    worddict["_EOS_"] = 3
 
     return worddict
 
@@ -111,7 +120,7 @@ def words_to_indices(sentence, worddict):
     Returns:
         A list of indices.
     """
-    indices = []
+    indices = [worddict["_BOS_"]]
     for word in sentence:
         if word in worddict:
             index = worddict[word]
@@ -120,6 +129,7 @@ def words_to_indices(sentence, worddict):
             # out-of-vocabulary word (OOV).
             index = worddict['_OOV_']
         indices.append(index)
+    indices.append(worddict["_EOS_"])
 
     return indices
 
@@ -198,7 +208,7 @@ def build_embedding_matrix(worddict, embeddings_file):
     # Actual building of the embedding matrix.
     for word, i in worddict.items():
         if word in embeddings:
-            embedding_matrix[i] = embeddings[word]
+            embedding_matrix[i] = np.array(embeddings[word], dtype=float)
         else:
             if word == "_PAD_":
                 continue
@@ -209,7 +219,8 @@ def build_embedding_matrix(worddict, embeddings_file):
     return embedding_matrix
 
 
-def preprocess_NLI(inputdir, targetdir, embeddings_file):
+def preprocess_NLI(inputdir, targetdir, embeddings_file, lower=False,
+                   ignore_punct=False, num_words=None):
     """
     Preprocess the data from some NLI corpus so it can be used by the
     ESIM model.
@@ -241,10 +252,11 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file):
 
     print(20*"=", " Preprocessing train set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, train_file))
+    data = read_data(os.path.join(inputdir, train_file), lower=lower,
+                     ignore_punct=ignore_punct)
 
     print("\t* Computing worddict and saving it...")
-    worddict = build_worddict(data, num_words=42394)
+    worddict = build_worddict(data, num_words=num_words)
     with open(os.path.join(targetdir, "worddict.pkl"), 'wb') as pkl_file:
         pickle.dump(worddict, pkl_file)
 
@@ -257,7 +269,8 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file):
 
     print(20*"=", " Preprocessing dev set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, dev_file))
+    data = read_data(os.path.join(inputdir, dev_file), lower=lower,
+                     ignore_punct=ignore_punct)
 
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = transform_to_indices(data, worddict, labeldict)
@@ -267,7 +280,8 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file):
 
     print(20*"=", " Preprocessing test set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, test_file))
+    data = read_data(os.path.join(inputdir, test_file), lower=lower,
+                     ignore_punct=ignore_punct)
 
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = transform_to_indices(data, worddict, labeldict)
@@ -289,10 +303,22 @@ if __name__ == "__main__":
  for ESIM')
     parser.add_argument('data_dir', help='Path to the NLI dataset to\
  preprocess')
-    parser.add_argument('target_dir', help='Path to the directory where the\
- preprocessed data must be saved')
     parser.add_argument('embeddings_file', help='Path to a file containing\
  pretrained word embeddings')
+    parser.add_argument('target_dir', help='Path to the directory where the\
+ preprocessed data must be saved')
+
+    parser.add_argument('--lower', default=False, type=bool,
+                        help='Boolean indicating whether to lowercase words in\
+ the premises and hypotheses')
+    parser.add_argument('--ignore_punct', default=False, type=bool,
+                        help='Boolean indicating whether to ignore punctuation\
+ in the hypotheses and premises')
+    parser.add_argument('--num_words', default=None, type=int,
+                        help='Number of words to use for the embeddgings')
+
     args = parser.parse_args()
 
-    preprocess_NLI(args.data_dir, args.target_dir, args.embeddings_file)
+    preprocess_NLI(args.data_dir, args.target_dir, args.embeddings_file,
+                   lower=args.lower, ignore_punct=args.ignore_punct,
+                   num_words=args.num_words)

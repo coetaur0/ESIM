@@ -127,7 +127,7 @@ def weighted_sum(tensor, weights, mask):
 # https://github.com/allenai/allennlp/blob/master/allennlp/nn/util.py.
 def replace_masked(tensor, mask, value):
     """
-    Replace the all the values of vectors in 'tensor' that are masked in 
+    Replace the all the values of vectors in 'tensor' that are masked in
     'masked' by 'value'.
 
     Args:

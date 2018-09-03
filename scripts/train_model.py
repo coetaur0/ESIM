@@ -80,7 +80,7 @@ def train(dataloader, model, optimizer, criterion, epoch, max_grad_norm,
     return epoch_time, epoch_loss
 
 
-def validate(dataloader, model, criterion, epoch, device):
+def validate(dataloader, model, criterion, device):
     """
     Compute the loss and accuracy of a model on a validation dataset.
 
@@ -204,6 +204,10 @@ def main(train_file, valid_file, embeddings_file, target_dir,
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0004)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                                           mode='max',
+                                                           factor=0.5,
+                                                           patience=0)
 
     best_score = 0.0
     start_epoch = 0
@@ -218,6 +222,11 @@ def main(train_file, valid_file, embeddings_file, target_dir,
  {}...".format(start_epoch))
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
+
+    _, valid_loss, valid_accuracy = validate(valid_loader, model,
+                                             criterion, device)
+    print("Validation loss before training: {:.4f}, accuracy: {:.4f}%"
+          .format(valid_loss, (valid_accuracy*100)))
 
     patience_counter = 0
     epochs_count = []
@@ -237,12 +246,14 @@ def main(train_file, valid_file, embeddings_file, target_dir,
 
         print("- Validation for epoch {}:".format(epoch))
         epoch_time, epoch_loss, epoch_accuracy = validate(valid_loader, model,
-                                                          criterion, epoch,
-                                                          device)
+                                                          criterion, device)
 
         valid_losses.append(epoch_loss)
         print("-> Validation time: {:.4f}s, loss: {:.4f}, accuracy: {:.4f}%\n"
               .format(epoch_time, epoch_loss, (epoch_accuracy*100)))
+
+        # Update the optimizer's lr with the scheduler.
+        scheduler.step(epoch_accuracy)
 
         # Early stopping on validation accuracy.
         if epoch_accuracy < best_score:
