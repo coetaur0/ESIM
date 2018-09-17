@@ -16,26 +16,31 @@ class ESIM(nn.Module):
     Natural Language Inference" by Chen et al.
     """
 
-    def __init__(self, embeddings, hidden_size, padding_idx=0, num_classes=3,
+    def __init__(self, vocab_size, embedding_dim, hidden_size,
+                 embeddings=None, padding_idx=0, num_classes=3,
                  dropout=0.5, device="cpu"):
         """
         Args:
-            embeddings: A tensor of size (vocab_size, embedding_dim) containing
-                pretrained word embeddings.
+            vocab_size: The size of the embeddings vocabulary in the model.
+            embedding_dim: The size of each embedding vector.
             hidden_size: The size of the hidden layers in the network.
+            embeddings: A tensor of size (vocab_size, embedding_dim) containing
+                pretrained word embeddings. If None, word embeddings are
+                initialised randomly. Defaults to None.
             padding_idx: The index of the padding token in the premises and
                 hypotheses passed as input to the model. Defaults to 0.
             num_classes: The number of classes in the output of the network.
                 Defaults to 3.
             dropout: The dropout rate to use on the outputs of the feedforward
-                layers of the network. Defaults to 0.5. A dropout rate of 0
-                corresponds to using no dropout at all.
-            device: The device on which the model is executed. Defaults to 
-                'cpu'. 
+                layers of the network. A dropout rate of 0 corresponds to using
+                no dropout at all. Defaults to 0.5.
+            device: The device on which the model is executed. Defaults to
+                'cpu'.
         """
         super(ESIM, self).__init__()
 
-        self.vocab_size, self.embedding_dim = embeddings.size()
+        self.vocab_size = vocab_size
+        self.embedding_dim = embedding_dim
         self.hidden_size = hidden_size
         self.num_classes = num_classes
         self.dropout = dropout
@@ -46,7 +51,8 @@ class ESIM(nn.Module):
                                             padding_idx=padding_idx,
                                             _weight=embeddings)
 
-        self._rnn_dropout = RNNDropout(p=dropout)
+        # self._rnn_dropout = RNNDropout(p=dropout)
+        self._rnn_dropout = nn.Dropout(p=self.dropout)
 
         self._encoding = Seq2seqEncoder(nn.LSTM,
                                         self.embedding_dim,
@@ -69,7 +75,7 @@ class ESIM(nn.Module):
         self._classification = nn.Sequential(nn.Dropout(p=self.dropout),
                                              nn.Linear(2*4*self.hidden_size,
                                                        self.hidden_size),
-                                             nn.ReLU(),
+                                             nn.Tanh(),
                                              nn.Dropout(p=self.dropout),
                                              nn.Linear(self.hidden_size,
                                                        self.num_classes),
