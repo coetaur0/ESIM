@@ -8,6 +8,7 @@ import argparse
 import time
 import pickle
 import torch
+import json
 
 import matplotlib.pyplot as plt
 import torch.nn as nn
@@ -15,17 +16,18 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from esim.dataset import NLIDataset
 from esim.model import ESIM
+from esim.utils import correct_preds
 
 
-def train(dataloader, model, optimizer, criterion, epoch, max_grad_norm,
+def train(model, dataloader, optimizer, criterion, epoch, max_grad_norm,
           device, print_freq):
     """
     Train a model for one epoch on some input data with a given optimizer and
     criterion.
 
     Args:
+        model: A torch module that must be trained on some input data.
         dataloader: A DataLoader object to iterate over the training data.
-        model: A torch module that must be trained on the input data.
         optimizer: A torch optimizer to use for training on the input model.
         criterion: A loss criterion to use for training.
         epoch: The number of the epoch for which training is performed.
@@ -48,7 +50,7 @@ def train(dataloader, model, optimizer, criterion, epoch, max_grad_norm,
     for i, batch in enumerate(dataloader):
         batch_start = time.time()
 
-        # Move input and output data to the GPU if one is used.
+        # Move input and output data to the GPU if it is used.
         premises = batch['premise'].to(device)
         premise_lens = batch['premise_len'].to(device)
         hypotheses = batch['hypothesis'].to(device)
@@ -80,17 +82,17 @@ def train(dataloader, model, optimizer, criterion, epoch, max_grad_norm,
     return epoch_time, epoch_loss
 
 
-def validate(dataloader, model, criterion, device):
+def validate(model, dataloader, criterion, device):
     """
-    Compute the loss and accuracy of a model on a validation dataset.
+    Compute the loss and accuracy of a model on some validation dataset.
 
     Args:
-        dataloader: A DataLoader object to iterate over the validation data.
         model: A torch module for which the loss and accuracy must be
             computed.
+        dataloader: A DataLoader object to iterate over the validation data.
         criterion: A loss criterion to use for computing the loss.
         epoch: The number of the epoch for which validation is performed.
-        device: The device on which the model is.
+        device: The device on which the model is located.
 
     Returns:
         epoch_time: The total time to compute the loss and accuracy on the
@@ -129,27 +131,10 @@ def validate(dataloader, model, criterion, device):
     return epoch_time, epoch_loss, epoch_accuracy
 
 
-def correct_preds(out_probs, targets):
-    """
-    Compute the number of predictions that match some target classes in the
-    output of a model.
-
-    Args:
-        out_probs: A tensor of probabilities for different output classes.
-        targets: The indices of the actual target classes.
-
-    Returns:
-        The number of correct predictions.
-    """
-    _, out_classes = out_probs.max(dim=1)
-    correct = (out_classes == targets).sum()
-    return correct.item()
-
-
 def main(train_file, valid_file, embeddings_file, target_dir,
-         epochs=64, batch_size=32, hidden_size=300, num_classes=3,
-         dropout=0.5, patience=5, max_grad_norm=10.0, print_freq=1000,
-         checkpoint=None):
+         hidden_size=300, num_classes=3, dropout=0.5,
+         epochs=64, batch_size=32, patience=5, max_grad_norm=10.0,
+         print_freq=1000, checkpoint=None):
     """
     Train the ESIM model on some dataset.
 
@@ -162,13 +147,13 @@ def main(train_file, valid_file, embeddings_file, target_dir,
             must be used to initialise the model.
         target_dir: The path to a directory where the trained model must
             be saved.
-        epochs: The maximum number of epochs for training. Defaults to 64.
-        batch_size: The size of the batches for training. Defaults to 32.
         hidden_size: The size of the hidden layers in the model. Defaults
             to 300.
         num_classes: The number of classes in the output of the model.
             Defaults to 3.
         dropout: The dropout rate to use in the model. Defaults to 0.5.
+        epochs: The maximum number of epochs for training. Defaults to 64.
+        batch_size: The size of the batches for training. Defaults to 32.
         patience: The patience to use for early stopping. Defaults to 5.
         print_freq: The frequency at which training information must be
             printed out.
@@ -182,6 +167,7 @@ def main(train_file, valid_file, embeddings_file, target_dir,
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
 
+    # -------------------- Data loading ------------------- #
     print("- Loading training data...")
     with open(train_file, 'rb') as pkl:
         train_data = NLIDataset(pickle.load(pkl))
@@ -194,14 +180,17 @@ def main(train_file, valid_file, embeddings_file, target_dir,
 
     valid_loader = DataLoader(valid_data, shuffle=False, batch_size=batch_size)
 
+    # -------------------- Model definition ------------------- #
     print('- Building model...')
     with open(embeddings_file, 'rb') as pkl:
         embeddings = torch.tensor(pickle.load(pkl), dtype=torch.float)\
                      .to(device)
 
-    model = ESIM(embeddings, hidden_size, num_classes=num_classes,
+    model = ESIM(embeddings.shape[0], embeddings.shape[1], hidden_size,
+                 embeddings=embeddings, num_classes=num_classes,
                  dropout=dropout, device=device).to(device)
 
+    # -------------------- Preparation for training  ------------------- #
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0004)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
@@ -210,33 +199,41 @@ def main(train_file, valid_file, embeddings_file, target_dir,
                                                            patience=0)
 
     best_score = 0.0
-    start_epoch = 0
+    start_epoch = 1
 
-    # Continuing training if a checkpoint was given as argument.
+    # Data for loss curves plot.
+    epochs_count = []
+    train_losses = []
+    valid_losses = []
+
+    # Continuing training from a checkpoint if one was given as argument.
     if checkpoint:
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch']
         best_score = checkpoint['best_score']
 
-        print("- Loading pretrained model and continuing training from epoch\
- {}...".format(start_epoch))
+        print("- Continuing training on existing model from epoch {}..."
+              .format(start_epoch))
+
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
+        epochs_count = checkpoint['epochs_count']
+        train_losses = checkpoint['train_losses']
+        valid_losses = checkpoint['valid_losses']
 
-    _, valid_loss, valid_accuracy = validate(valid_loader, model,
+    # Compute loss and accuracy before starting (or resuming) training.
+    _, valid_loss, valid_accuracy = validate(model, valid_loader,
                                              criterion, device)
     print("Validation loss before training: {:.4f}, accuracy: {:.4f}%"
           .format(valid_loss, (valid_accuracy*100)))
 
+    # -------------------- Training epochs ------------------- #
     patience_counter = 0
-    epochs_count = []
-    train_losses = []
-    valid_losses = []
-    for epoch in range(start_epoch, epochs):
+    for epoch in range(start_epoch, epochs+1):
         epochs_count.append(epoch)
 
         print("- Training epoch {}:".format(epoch))
-        epoch_time, epoch_loss = train(train_loader, model, optimizer,
+        epoch_time, epoch_loss = train(model, train_loader, optimizer,
                                        criterion, epoch, max_grad_norm,
                                        device, print_freq)
 
@@ -245,14 +242,14 @@ def main(train_file, valid_file, embeddings_file, target_dir,
               .format(epoch_time, epoch_loss))
 
         print("- Validation for epoch {}:".format(epoch))
-        epoch_time, epoch_loss, epoch_accuracy = validate(valid_loader, model,
+        epoch_time, epoch_loss, epoch_accuracy = validate(model, valid_loader,
                                                           criterion, device)
 
         valid_losses.append(epoch_loss)
         print("-> Validation time: {:.4f}s, loss: {:.4f}, accuracy: {:.4f}%\n"
               .format(epoch_time, epoch_loss, (epoch_accuracy*100)))
 
-        # Update the optimizer's lr with the scheduler.
+        # Update the optimizer's learning rate with the scheduler.
         scheduler.step(epoch_accuracy)
 
         # Early stopping on validation accuracy.
@@ -261,10 +258,16 @@ def main(train_file, valid_file, embeddings_file, target_dir,
         else:
             best_score = epoch_accuracy
             patience_counter = 0
+
+            # Save the model if the score is better or as good as
+            # previous ones.
             torch.save({'epoch': epoch+1,
                         'state_dict': model.state_dict(),
                         'best_score': best_score,
-                        'optimizer': optimizer.state_dict()},
+                        'optimizer': optimizer.state_dict(),
+                        'epochs_count': epochs_count,
+                        'train_losses': train_losses,
+                        'valid_losses': valid_losses},
                        os.path.join(target_dir, "esim_{}.pth.tar"
                                                 .format(epoch)))
 
@@ -272,6 +275,7 @@ def main(train_file, valid_file, embeddings_file, target_dir,
             print("-> Early stopping: patience limit reached, stopping...")
             break
 
+    # Plotting of the loss curves for the train and validation sets.
     plt.figure()
     plt.plot(epochs_count, train_losses, '-r')
     plt.plot(epochs_count, valid_losses, '-b')
@@ -284,41 +288,20 @@ def main(train_file, valid_file, embeddings_file, target_dir,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train the ESIM model')
 
-    parser.add_argument('train_file', help='A path to a file containing some\
- preprocessed training data')
-    parser.add_argument('valid_file', help='A path to a file containing some\
- preprocessed validation data')
-    parser.add_argument('embeddings_file', help='A path to a file containing\
- some preprocessed word embeddings')
-
-    parser.add_argument('--target_dir', default=os.path.join('..',
-                                                             'data',
-                                                             'pretrained'),
-                        help='The path to the directory where the trained\
- model\'s parameters must be saved')
-    parser.add_argument('--epochs', default=64, type=int, help='The maximum\
- number of epochs to apply for training')
-    parser.add_argument('--batch_size', default=32, type=int, help='The batch\
- size')
-    parser.add_argument('--hidden_size', default=300, type=int, help='The\
- hidden size to use for the layers in the model')
-    parser.add_argument('--num_classes', default=3, type=int, help='The number\
- of classes in the targets')
-    parser.add_argument('--dropout', default=0.5, type=float,
-                        help='The dropout rate to use in the model')
-    parser.add_argument('--max_grad_norm', default=10.0, type=float,
-                        help='Max. gradient norm for gradient clipping')
-    parser.add_argument('--patience', default=5, type=int, help='The patience\
- to use during training for early stopping')
-    parser.add_argument('--print_freq', default=1000, type=int,
-                        help='The number of batches after which information\
- must be printed during training')
-    parser.add_argument('--checkpoint', default=None, help='The path to a\
- checkpoint that must be used to resume training')
-
+    parser.add_argument('--config', default="../config/train_cfg.json",
+                        help='Path to a json configuration file')
+    parser.add_argument('--checkpoint', default=None,
+                        help='path to a checkpoint file to resume training')
     args = parser.parse_args()
 
-    main(args.train_file, args.valid_file, args.embeddings_file,
-         args.target_dir, args.epochs, args.batch_size, args.hidden_size,
-         args.num_classes, args.dropout, args.patience, args.max_grad_norm,
-         args.print_freq, args.checkpoint)
+    with open(os.path.normpath(args.config), 'r') as config_file:
+        config = json.load(config_file)
+
+    main(os.path.normpath(config["train_data"]),
+         os.path.normpath(config["valid_data"]),
+         os.path.normpath(config["embeddings"]),
+         os.path.normpath(config["target_dir"]),
+         config["hidden_size"], config["num_classes"], config["dropout"],
+         config["epochs"], config["batch_size"], config["patience"],
+         config["max_grad_norm"], config["print_freq"],
+         args.checkpoint)

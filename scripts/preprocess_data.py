@@ -7,20 +7,21 @@ import os
 import pickle
 import string
 import fnmatch
+import json
 import numpy as np
 from collections import Counter
 
 
-def read_data(filepath, lower=False, ignore_punct=False):
+def read_data(filepath, lowercase=False, ignore_punct=False):
     """
     Read the premises, hypotheses and labels from a file in some NLI
     dataset and return them in a dictionary.
 
     Args:
         filepath: The path to the file containing the premises, hypotheses
-            and labels that must be read. The file should be in the same
-            form as the SNLI dataset (or MultiNLI).
-        lower: Boolean indicating whether the words in the premises and
+            and labels that must be read. The file should be formatted in
+            the same way as the SNLI dataset (or MultiNLI).
+        lowercase: Boolean indicating whether the words in the premises and
             hypotheses must be lowercased.
         ignore_punct: Boolean indicating whether to ignore punctuation in
             the sentences.
@@ -54,7 +55,7 @@ def read_data(filepath, lower=False, ignore_punct=False):
             premise = premise.translate(parentheses_table)
             hypothesis = hypothesis.translate(parentheses_table)
 
-            if lower:
+            if lowercase:
                 premise = premise.lower()
                 hypothesis = hypothesis.lower()
 
@@ -79,8 +80,9 @@ def build_worddict(data, num_words=None):
 
     Args:
         data: A dictionary containing the premises and hypotheses for which
-            a worddict must be built. The dictionary should have been built
-            by the read_data function of this module.
+            a worddict must be built. The dictionary is assumed to have the
+            same form as the dicts built by the read_data function of this
+            module.
         num_words: Integer indicating the maximum number of words to
             keep in the worddict. If specified, only the 'num_words' most
             frequent words will be kept. If set to None, all words are
@@ -219,8 +221,8 @@ def build_embedding_matrix(worddict, embeddings_file):
     return embedding_matrix
 
 
-def preprocess_NLI(inputdir, targetdir, embeddings_file, lower=False,
-                   ignore_punct=False, num_words=None):
+def preprocess_NLI(inputdir, embeddings_file, targetdir,
+                   lowercase=False, ignore_punct=False, num_words=None):
     """
     Preprocess the data from some NLI corpus so it can be used by the
     ESIM model.
@@ -231,10 +233,17 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file, lower=False,
 
     Args:
         inputdir: The path to the directory containing the NLI corpus.
-        targetdir: The path to the directory where the preprocessed data
-            must be saved.
         embedding_file: The path to the file containing the pretrained
             word vectors to build the embedding matrix.
+        targetdir: The path to the directory where the preprocessed data
+            must be saved.
+        lowercase: Boolean value indicating whether to lowercase the premises
+            and hypotheseses or not. Defautls to False.
+        ignore_punct: Boolean value indicating whether to remove punctuation
+            from the data or not. Defaults to False.
+        num_words: Integer value indicating the number of words to use in the
+            worddict for the word embeddings. If None, all words are kept.
+            Defaults to None.
     """
     if not os.path.exists(targetdir):
         os.makedirs(targetdir)
@@ -250,9 +259,10 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file, lower=False,
         elif fnmatch.fnmatch(file, '*_test.txt'):
             test_file = file
 
+    # -------------------- Train data preprocessing -------------------- #
     print(20*"=", " Preprocessing train set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, train_file), lower=lower,
+    data = read_data(os.path.join(inputdir, train_file), lowercase=lowercase,
                      ignore_punct=ignore_punct)
 
     print("\t* Computing worddict and saving it...")
@@ -267,9 +277,10 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file, lower=False,
     with open(os.path.join(targetdir, "train_data.pkl"), 'wb') as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
+    # -------------------- Validation data preprocessing -------------------- #
     print(20*"=", " Preprocessing dev set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, dev_file), lower=lower,
+    data = read_data(os.path.join(inputdir, dev_file), lowercase=lowercase,
                      ignore_punct=ignore_punct)
 
     print("\t* Transforming words in premises and hypotheses to indices...")
@@ -278,9 +289,10 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file, lower=False,
     with open(os.path.join(targetdir, "dev_data.pkl"), 'wb') as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
+    # -------------------- Test data preprocessing -------------------- #
     print(20*"=", " Preprocessing test set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, test_file), lower=lower,
+    data = read_data(os.path.join(inputdir, test_file), lowercase=lowercase,
                      ignore_punct=ignore_punct)
 
     print("\t* Transforming words in premises and hypotheses to indices...")
@@ -289,6 +301,7 @@ def preprocess_NLI(inputdir, targetdir, embeddings_file, lower=False,
     with open(os.path.join(targetdir, "test_data.pkl"), 'wb') as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
+    # -------------------- Embeddings preprocessing -------------------- #
     print(20*"=", " Preprocessing embeddings ", 20*"=")
     print("\t* Building embedding matrix and saving it...")
     embed_matrix = build_embedding_matrix(worddict, embeddings_file)
@@ -301,24 +314,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Preprocess some NLI dataset\
  for ESIM')
-    parser.add_argument('data_dir', help='Path to the NLI dataset to\
- preprocess')
-    parser.add_argument('embeddings_file', help='Path to a file containing\
- pretrained word embeddings')
-    parser.add_argument('target_dir', help='Path to the directory where the\
- preprocessed data must be saved')
-
-    parser.add_argument('--lower', default=False, type=bool,
-                        help='Boolean indicating whether to lowercase words in\
- the premises and hypotheses')
-    parser.add_argument('--ignore_punct', default=False, type=bool,
-                        help='Boolean indicating whether to ignore punctuation\
- in the hypotheses and premises')
-    parser.add_argument('--num_words', default=None, type=int,
-                        help='Number of words to use for the embeddgings')
-
+    parser.add_argument('--config', default="../config/preproc_cfg.json",
+                        help='Path to a configuration file')
     args = parser.parse_args()
 
-    preprocess_NLI(args.data_dir, args.target_dir, args.embeddings_file,
-                   lower=args.lower, ignore_punct=args.ignore_punct,
-                   num_words=args.num_words)
+    with open(os.path.normpath(args.config), 'r') as cfg_file:
+        config = json.load(cfg_file)
+
+    preprocess_NLI(os.path.normpath(config["data_dir"]),
+                   os.path.normpath(config["embeddings_file"]),
+                   os.path.normpath(config["target_dir"]),
+                   lowercase=config["lowercase"],
+                   ignore_punct=config["ignore_punct"],
+                   num_words=config["num_words"])

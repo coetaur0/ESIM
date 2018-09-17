@@ -3,31 +3,17 @@ Test the ESIM model on some preprocessed dataset.
 """
 # Aurelien Coet, 2018.
 
+import os
 import time
 import pickle
 import argparse
 import torch
+import json
 
 from torch.utils.data import DataLoader
 from esim.dataset import NLIDataset
 from esim.model import ESIM
-
-
-def correct_preds(out_probs, targets):
-    """
-    Compute the number of predictions that match some target classes in the
-    output of a model.
-
-    Args:
-        out_probs: A tensor of probabilities for different output classes.
-        targets: The indices of the actual target classes.
-
-    Returns:
-        The number of correct predictions.
-    """
-    _, out_classes = out_probs.max(dim=1)
-    correct = (out_classes == targets).sum()
-    return correct.item()
+from esim.utils import correct_preds
 
 
 def test(dataloader, model, device):
@@ -76,22 +62,23 @@ def test(dataloader, model, device):
     return batch_time, total_time, accuracy
 
 
-def main(test_file, embeddings_file, pretrained_file, batch_size=32,
-         hidden_size=300, num_classes=3):
+def main(test_file, pretrained_file, vocab_size, embedding_dim,
+         hidden_size=300, num_classes=3, batch_size=32):
     """
     Test the ESIM model with pretrained weights on some dataset.
 
     Args:
         test_file: The path to a file containing preprocessed NLI data.
-        embeddings_file: The path to a file containing preprocessed word
-            embeddings.
         pretrained_file: The path to a checkpoint produced by the
             'train_model' script.
-        batch_size: The size of the batches used for testing. Defaults to 32.
+        vocab_size: The number of words in the vocabulary of the model
+            being tested.
+        embedding_dim: The size of the embeddings in the model.
         hidden_size: The size of the hidden layers in the model. Must match
             the size used during training. Defaults to 300.
         num_classes: The number of classes in the output of the model. Must
             match the value used during training. Defaults to 3.
+        batch_size: The size of the batches used for testing. Defaults to 32.
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -104,12 +91,8 @@ def main(test_file, embeddings_file, pretrained_file, batch_size=32,
     test_loader = DataLoader(test_data, shuffle=False, batch_size=batch_size)
 
     print("- Building model...")
-    with open(embeddings_file, 'rb') as pkl:
-        embeddings = torch.tensor(pickle.load(pkl), dtype=torch.float)\
-                     .to(device)
-
-    model = ESIM(embeddings, hidden_size, num_classes=num_classes,
-                 device=device).to(device)
+    model = ESIM(vocab_size, embedding_dim, hidden_size,
+                 num_classes=num_classes, device=device).to(device)
 
     checkpoint = torch.load(pretrained_file)
     model.load_state_dict(checkpoint['state_dict'])
@@ -125,21 +108,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test the ESIM model on\
  some dataset')
 
-    parser.add_argument('test_file', help='The path to a file containing some\
- preprocessed data to test the model on')
-    parser.add_argument('embeddings_file', help='The path to a file containing\
- some preprocessed word embeddings')
-    parser.add_argument('pretrained_file', help='The path to a saved pretrained\
- model')
-
-    parser.add_argument('--batch_size', default=32, type=int, help='The batch\
- size')
-    parser.add_argument('--hidden_size', default=300, type=int, help='The\
- hidden size to use for the layers in the model')
-    parser.add_argument('--num_classes', default=3, type=int, help='The number\
- of classes in the targets')
-
+    parser.add_argument('checkpoint', help="Path to a checkpoint produced by\
+ the 'train_model' script, containing a pretrained model")
+    parser.add_argument('--config', default='../config/test_cfg.json',
+                        help='Path to a configuration file')
     args = parser.parse_args()
 
-    main(args.test_file, args.embeddings_file, args.pretrained_file,
-         args.batch_size, args.hidden_size, args.num_classes)
+    with open(os.path.normpath(args.config), 'r') as config_file:
+        config = json.load(config_file)
+
+    main(os.path.normpath(config['test_data']),
+         args.checkpoint,
+         config['vocab_size'],
+         config['embedding_dim'],
+         config['hidden_size'],
+         config['num_classes'],
+         config['batch_size'])

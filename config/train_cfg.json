@@ -1,0 +1,17 @@
+{
+    "train_data": "../data/preprocessed/train_data.pkl",
+    "valid_data": "../data/preprocessed/dev_data.pkl",
+    "embeddings": "../data/preprocessed/embeddings.pkl",
+
+    "target_dir": "../data/pretrained",
+    
+    "hidden_size": 300,
+    "dropout": 0.25,
+    "num_classes": 3,
+
+    "epochs": 64,
+    "batch_size": 32,
+    "patience": 5,
+    "max_grad_norm": 10.0,
+    "print_freq": 1000
+}

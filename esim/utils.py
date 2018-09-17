@@ -145,3 +145,20 @@ def replace_masked(tensor, mask, value):
     reverse_mask = 1.0 - mask
     values_to_add = value * reverse_mask
     return tensor * mask + values_to_add
+
+
+def correct_preds(out_probs, targets):
+    """
+    Compute the number of predictions that match some target classes in the
+    output of a model.
+
+    Args:
+        out_probs: A tensor of probabilities for different output classes.
+        targets: The indices of the actual target classes.
+
+    Returns:
+        The number of correct predictions.
+    """
+    _, out_classes = out_probs.max(dim=1)
+    correct = (out_classes == targets).sum()
+    return correct.item()
