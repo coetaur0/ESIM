@@ -1,5 +1,5 @@
 """
-Utilities for the ESIM model.
+Utility functions for the ESIM model.
 """
 # Aurelien Coet, 2018.
 
@@ -7,19 +7,19 @@ import torch
 import torch.nn as nn
 
 
-# Code inspired from:
+# Code widely inspired from:
 # https://github.com/allenai/allennlp/blob/master/allennlp/nn/util.py.
-def sort_by_seq_len(batch, seq_lens, decreasing=True):
+def sort_by_seq_lens(batch, sequences_lengths, descending=True):
     """
     Sort a batch of padded variable length sequences by length.
 
     Args:
         batch: A batch of padded variable length sequences. The batch should
             have the dimensions (batch_size x max_sequence_length x *).
-        seq_lens: A tensor containing the lengths of the sequences in the
+        sequences_lengths: A tensor containing the lengths of the sequences in the
             input batch. The tensor should be of size (batch_size).
-        decreasing: A boolean value indicating whether to sort the sequences
-            by their lengths in decreasing order. Defaults to True.
+        descending: A boolean value indicating whether to sort the sequences
+            by their lengths in descending order. Defaults to True.
 
     Returns:
         sorted_batch: A tensor containing the input batch reordered by
@@ -32,40 +32,42 @@ def sort_by_seq_len(batch, seq_lens, decreasing=True):
             restore the order of the sequences in 'sorted_batch' so that it
             matches the input batch.
     """
-    sorted_seq_lens, sorting_idx = seq_lens.sort(0, descending=decreasing)
+    sorted_seq_lens, sorting_index =\
+        sequences_lengths.sort(0, descending=descending)
 
-    sorted_batch = batch.index_select(0, sorting_idx)
+    sorted_batch = batch.index_select(0, sorting_index)
 
-    idx_range = seq_lens.new_tensor(torch.arange(0, len(seq_lens)))
-    _, reverse_mapping = sorting_idx.sort(0, descending=False)
-    restoration_idx = idx_range.index_select(0, reverse_mapping)
+    idx_range =\
+        sequences_lengths.new_tensor(torch.arange(0, len(sequences_lengths)))
+    _, reverse_mapping = sorting_index.sort(0, descending=False)
+    restoration_index = idx_range.index_select(0, reverse_mapping)
 
-    return sorted_batch, sorted_seq_lens, sorting_idx, restoration_idx
+    return sorted_batch, sorted_seq_lens, sorting_index, restoration_index
 
 
-def get_mask(seq_batch, seq_lens):
+def get_mask(sequences_batch, sequences_lengths):
     """
     Get the mask for a batch of padded variable length sequences.
 
     Args:
-        seq_batch: A batch of padded variable length sequences containing
-            word indices. It is a 2-dimensional tensor with size 
+        sequences_batch: A batch of padded variable length sequences
+            containing word indices. Must be a 2-dimensional tensor of size
             (batch, sequence).
-        seq_lens: A tensor containing the lengths of the sequences in
-            'seq_batch'. It is of size (batch).
+        sequences_lengths: A tensor containing the lengths of the sequences in
+            'sequences_batch'. Must be of size (batch).
 
     Returns:
-        A mask of size (batch, max_seq_len), where max_seq_len is the length
-        of the longest sequence in the batch.
+        A mask of size (batch, max_sequence_length), where max_sequence_length
+        is the length of the longest sequence in the batch.
     """
-    batch_size = seq_batch.size()[0]
-    max_len = torch.max(seq_lens)
-    mask = torch.ones(batch_size, max_len)
-    mask[seq_batch[:, :max_len] == 0] = 0
+    batch_size = sequences_batch.size()[0]
+    max_length = torch.max(sequences_lengths)
+    mask = torch.ones(batch_size, max_length, dtype=torch.float)
+    mask[sequences_batch[:, :max_length] == 0] = 0.0
     return mask
 
 
-# Code inspired from:
+# Code widely inspired from:
 # https://github.com/allenai/allennlp/blob/master/allennlp/nn/util.py.
 def masked_softmax(tensor, mask):
     """
@@ -99,6 +101,8 @@ def masked_softmax(tensor, mask):
     return result.view(*tensor_shape)
 
 
+# Code widely inspired from:
+# https://github.com/allenai/allennlp/blob/master/allennlp/nn/util.py.
 def weighted_sum(tensor, weights, mask):
     """
     Apply a weighted sum on the vectors along the last dimension of 'tensor',
@@ -135,7 +139,7 @@ def replace_masked(tensor, mask, value):
             replaced.
         mask: A mask indicating the vectors which must have their values
             replaced.
-        value: The value to use in the masked vectors of 'tensor'.
+        value: The value to place in the masked vectors of 'tensor'.
 
     Returns:
         A new tensor of the same size as 'tensor' where the values of the
@@ -147,18 +151,19 @@ def replace_masked(tensor, mask, value):
     return tensor * mask + values_to_add
 
 
-def correct_preds(out_probs, targets):
+def correct_predictions(output_probabilities, targets):
     """
     Compute the number of predictions that match some target classes in the
     output of a model.
 
     Args:
-        out_probs: A tensor of probabilities for different output classes.
+        output_probabilities: A tensor of probabilities for different output
+            classes.
         targets: The indices of the actual target classes.
 
     Returns:
-        The number of correct predictions.
+        The number of correct predictions in 'output_probabilities'.
     """
-    _, out_classes = out_probs.max(dim=1)
+    _, out_classes = output_probabilities.max(dim=1)
     correct = (out_classes == targets).sum()
     return correct.item()
