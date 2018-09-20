@@ -1,9 +1,9 @@
 from setuptools import setup
 
 
-setup(name='ESIMtorch',
+setup(name='ESIM',
       version=1.0,
-      url='https://github.com/coetaur0/ESIMtorch',
+      url='https://github.com/coetaur0/ESIM',
       license='Apache 2',
       author='Aurelien Coet',
       author_email='aurelien.coet19@gmail.com',

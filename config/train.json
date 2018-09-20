@@ -3,15 +3,15 @@
     "valid_data": "../data/preprocessed/dev_data.pkl",
     "embeddings": "../data/preprocessed/embeddings.pkl",
 
-    "target_dir": "../data/pretrained",
+    "target_dir": "../data/checkpoints",
     
     "hidden_size": 300,
-    "dropout": 0.25,
+    "dropout": 0.5,
     "num_classes": 3,
 
     "epochs": 64,
     "batch_size": 32,
-    "patience": 5,
-    "max_grad_norm": 10.0,
-    "print_freq": 1000
+    "patience": 7,
+    "max_gradient_norm": 10.0,
+    "print_frequency": 1000
 }

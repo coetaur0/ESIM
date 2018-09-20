@@ -13,17 +13,16 @@ import json
 from torch.utils.data import DataLoader
 from esim.dataset import NLIDataset
 from esim.model import ESIM
-from esim.utils import correct_preds
+from esim.utils import correct_predictions
 
 
-def test(dataloader, model, device):
+def test(model, dataloader):
     """
     Test the accuracy of a model on some dataset.
 
     Args:
+        model: The torch module on which testing must be performed.
         dataloader: A DataLoader object to iterate over some dataset.
-        model: The torch model to test.
-        device: The device on which the model is being executed.
 
     Returns:
         batch_time: The average time to predict the classes of a batch.
@@ -32,6 +31,7 @@ def test(dataloader, model, device):
     """
     # Switch the model to eval mode.
     model.eval()
+    device = model.device
 
     time_start = time.time()
     batch_time = 0.0
@@ -44,15 +44,17 @@ def test(dataloader, model, device):
 
             # Move input and output data to the GPU if one is used.
             premises = batch['premise'].to(device)
-            premise_lens = batch['premise_len'].to(device)
+            premises_lengths = batch['premise_length'].to(device)
             hypotheses = batch['hypothesis'].to(device)
-            hypothesis_lens = batch['hypothesis_len'].to(device)
+            hypotheses_lengths = batch['hypothesis_length'].to(device)
             labels = batch['label'].to(device)
 
-            outputs = model(premises, premise_lens,
-                            hypotheses, hypothesis_lens)
+            _, probs = model(premises,
+                             premises_lengths,
+                             hypotheses,
+                             hypotheses_lengths)
 
-            accuracy += correct_preds(outputs, labels)
+            accuracy += correct_predictions(probs, labels)
             batch_time += time.time() - batch_start
 
     batch_time /= len(dataloader)
@@ -62,8 +64,13 @@ def test(dataloader, model, device):
     return batch_time, total_time, accuracy
 
 
-def main(test_file, pretrained_file, vocab_size, embedding_dim,
-         hidden_size=300, num_classes=3, batch_size=32):
+def main(test_file,
+         pretrained_file,
+         vocab_size,
+         embedding_dim,
+         hidden_size=300,
+         num_classes=3,
+         batch_size=32):
     """
     Test the ESIM model with pretrained weights on some dataset.
 
@@ -82,23 +89,28 @@ def main(test_file, pretrained_file, vocab_size, embedding_dim,
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    print("Testing ESIM model on device: {}".format(device))
+    print(20 * "=", " Preparing for testing ", 20 * "=")
 
-    print("- Loading test data...")
+    print("\t* Loading test data...")
     with open(test_file, 'rb') as pkl:
         test_data = NLIDataset(pickle.load(pkl))
 
     test_loader = DataLoader(test_data, shuffle=False, batch_size=batch_size)
 
-    print("- Building model...")
-    model = ESIM(vocab_size, embedding_dim, hidden_size,
-                 num_classes=num_classes, device=device).to(device)
+    print("\t* Building model...")
+    model = ESIM(vocab_size,
+                 embedding_dim,
+                 hidden_size,
+                 num_classes=num_classes,
+                 device=device).to(device)
 
     checkpoint = torch.load(pretrained_file)
-    model.load_state_dict(checkpoint['state_dict'])
+    model.load_state_dict(checkpoint['model'])
 
-    print("- Testing model...")
-    batch_time, total_time, accuracy = test(test_loader, model, device)
+    print(20 * "=",
+          " Testing ESIM model on device: {} ".format(device),
+          20 * "=")
+    batch_time, total_time, accuracy = test(test_loader, model)
 
     print("-> Average batch processing time: {:.4f}s, total test time:\
  {:.4f}s, accuracy: {:.4f}%".format(batch_time, total_time, (accuracy*100)))
@@ -107,10 +119,9 @@ def main(test_file, pretrained_file, vocab_size, embedding_dim,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test the ESIM model on\
  some dataset')
-
-    parser.add_argument('checkpoint', help="Path to a checkpoint produced by\
- the 'train_model' script, containing a pretrained model")
-    parser.add_argument('--config', default='../config/test_cfg.json',
+    parser.add_argument('checkpoint',
+                        help="Path to a checkpoint with a pretrained model")
+    parser.add_argument('--config', default='../config/test.json',
                         help='Path to a configuration file')
     args = parser.parse_args()
 

@@ -1,5 +1,5 @@
 """
-Preprocess the downloaded dataset and word embeddings for the ESIM model.
+Preprocess some NLI dataset and word embeddings to be used by the ESIM model.
 """
 # Aurelien Coet, 2018.
 
@@ -12,23 +12,23 @@ import numpy as np
 from collections import Counter
 
 
-def read_data(filepath, lowercase=False, ignore_punct=False):
+def read_data(filepath, lowercase=False, ignore_punctuation=False):
     """
     Read the premises, hypotheses and labels from a file in some NLI
     dataset and return them in a dictionary.
 
     Args:
-        filepath: The path to the file containing the premises, hypotheses
+        filepath: The path to a file containing some premises, hypotheses
             and labels that must be read. The file should be formatted in
-            the same way as the SNLI dataset (or MultiNLI).
-        lowercase: Boolean indicating whether the words in the premises and
-            hypotheses must be lowercased.
-        ignore_punct: Boolean indicating whether to ignore punctuation in
-            the sentences.
+            the same way as the SNLI (or MultiNLI) dataset.
+        lowercase: Boolean value indicating whether the words in the premises
+            and hypotheses must be lowercased.
+        ignore_punctuation: Boolean value indicating whether to ignore
+            punctuation in the premises and hypotheses.
 
     Returns:
         A dictionary containing three lists, one for the premises, one for the
-        hypotheses, and one for the labels.
+        hypotheses, and one for the labels in the input data.
     """
     with open(filepath, 'r') as input_data:
         premises, hypotheses, labels = [], [], []
@@ -38,7 +38,7 @@ def read_data(filepath, lowercase=False, ignore_punct=False):
         parentheses_table = str.maketrans({'(': None, ')': None})
         punct_table = str.maketrans({key: ' ' for key in string.punctuation})
 
-        # Ignore the headers on the first line in the SNLI file.
+        # Ignore the headers on the first line of the file.
         next(input_data)
 
         for line in input_data:
@@ -59,7 +59,7 @@ def read_data(filepath, lowercase=False, ignore_punct=False):
                 premise = premise.lower()
                 hypothesis = hypothesis.lower()
 
-            if ignore_punct:
+            if ignore_punctuation:
                 premise = premise.translate(punct_table)
                 hypothesis = hypothesis.translate(punct_table)
 
@@ -76,20 +76,20 @@ def read_data(filepath, lowercase=False, ignore_punct=False):
 def build_worddict(data, num_words=None):
     """
     Build a dictionary associating words from a set of premises and
-    hypotheses to indices.
+    hypotheses to unique integer indices.
 
     Args:
         data: A dictionary containing the premises and hypotheses for which
             a worddict must be built. The dictionary is assumed to have the
-            same form as the dicts built by the read_data function of this
+            same form as the dicts built by the 'read_data' function of this
             module.
         num_words: Integer indicating the maximum number of words to
             keep in the worddict. If specified, only the 'num_words' most
             frequent words will be kept. If set to None, all words are
-            kept.
+            kept. Defaults to None.
 
     Returns:
-        A dictionary associating words to indices.
+        A dictionary associating words to integer indices.
     """
     words = []
     [words.extend(sentence) for sentence in data['premises']]
@@ -113,7 +113,7 @@ def build_worddict(data, num_words=None):
 
 def words_to_indices(sentence, worddict):
     """
-    Transform the words in a sentence to indices.
+    Transform the words in a sentence to integer indices.
 
     Args:
         sentence: A list of words that must be transformed to indices.
@@ -122,6 +122,7 @@ def words_to_indices(sentence, worddict):
     Returns:
         A list of indices.
     """
+    # Include the beggining of sentence token at the start of the sentence.
     indices = [worddict["_BOS_"]]
     for word in sentence:
         if word in worddict:
@@ -131,6 +132,7 @@ def words_to_indices(sentence, worddict):
             # out-of-vocabulary word (OOV).
             index = worddict['_OOV_']
         indices.append(index)
+    # Add the end of sentence token at the end of the sentence.
     indices.append(worddict["_EOS_"])
 
     return indices
@@ -144,8 +146,8 @@ def transform_to_indices(data, worddict, labeldict):
     Args:
         data: A dictionary containing lists of premises, hypotheses
             and labels.
-        worddict: A dictionary associating words to indices.
-        labeldict: A dictionary associating labels to indices.
+        worddict: A dictionary associating words to unique integer indices.
+        labeldict: A dictionary associating labels to unique integer indices.
 
     Returns:
         A dictionary containing the transformed premises, hypotheses and
@@ -176,12 +178,12 @@ def build_embedding_matrix(worddict, embeddings_file):
     Build an embedding matrix with pretrained weights for a given worddict.
 
     Args:
-        worddict: A dictionary associating words to unique indices.
+        worddict: A dictionary associating words to unique integer indices.
         embeddings_file: A file containing pretrained word embeddings.
 
     Returns:
-        A numpy matrix of size (num_words+2 x embedding_dim) containing
-        pretrained word embeddings (the +2 is for the padding and
+        A numpy matrix of size (num_words+4, embedding_dim) containing
+        pretrained word embeddings (the +4 is for the padding, BOS, EOS and
         out-of-vocabulary tokens).
     """
     # Load the word embeddings in a dictionnary.
@@ -192,7 +194,8 @@ def build_embedding_matrix(worddict, embeddings_file):
 
             try:
                 # Check that the second element on the line is the start
-                # of the embedding and not another word.
+                # of the embedding and not another word. Necessary to
+                # ignore multiple word lines. 
                 float(line[1])
                 word = line[0]
                 if word in worddict:
@@ -221,8 +224,12 @@ def build_embedding_matrix(worddict, embeddings_file):
     return embedding_matrix
 
 
-def preprocess_NLI(inputdir, embeddings_file, targetdir,
-                   lowercase=False, ignore_punct=False, num_words=None):
+def preprocess_NLI_data(inputdir,
+                        embeddings_file,
+                        targetdir,
+                        lowercase=False,
+                        ignore_punctuation=False,
+                        num_words=None):
     """
     Preprocess the data from some NLI corpus so it can be used by the
     ESIM model.
@@ -233,21 +240,22 @@ def preprocess_NLI(inputdir, embeddings_file, targetdir,
 
     Args:
         inputdir: The path to the directory containing the NLI corpus.
-        embedding_file: The path to the file containing the pretrained
-            word vectors to build the embedding matrix.
+        embeddings_file: The path to the file containing the pretrained
+            word vectors that must be used to build the embedding matrix.
         targetdir: The path to the directory where the preprocessed data
             must be saved.
         lowercase: Boolean value indicating whether to lowercase the premises
-            and hypotheseses or not. Defautls to False.
-        ignore_punct: Boolean value indicating whether to remove punctuation
-            from the data or not. Defaults to False.
-        num_words: Integer value indicating the number of words to use in the
-            worddict for the word embeddings. If None, all words are kept.
+            and hypotheseses in the input data. Defautls to False.
+        ignore_punctuation: Boolean value indicating whether to remove
+            punctuation from the input data. Defaults to False.
+        num_words: Integer value indicating the size of the vocabulary to use
+            for the word embeddings. If set to None, all words are kept.
             Defaults to None.
     """
     if not os.path.exists(targetdir):
         os.makedirs(targetdir)
 
+    # Retrieve the train, dev and test data files from the dataset directory.
     train_file = ""
     dev_file = ""
     test_file = ""
@@ -262,8 +270,9 @@ def preprocess_NLI(inputdir, embeddings_file, targetdir,
     # -------------------- Train data preprocessing -------------------- #
     print(20*"=", " Preprocessing train set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, train_file), lowercase=lowercase,
-                     ignore_punct=ignore_punct)
+    data = read_data(os.path.join(inputdir, train_file),
+                     lowercase=lowercase,
+                     ignore_punctuation=ignore_punctuation)
 
     print("\t* Computing worddict and saving it...")
     worddict = build_worddict(data, num_words=num_words)
@@ -280,8 +289,9 @@ def preprocess_NLI(inputdir, embeddings_file, targetdir,
     # -------------------- Validation data preprocessing -------------------- #
     print(20*"=", " Preprocessing dev set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, dev_file), lowercase=lowercase,
-                     ignore_punct=ignore_punct)
+    data = read_data(os.path.join(inputdir, dev_file),
+                     lowercase=lowercase,
+                     ignore_punctuation=ignore_punctuation)
 
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = transform_to_indices(data, worddict, labeldict)
@@ -292,8 +302,9 @@ def preprocess_NLI(inputdir, embeddings_file, targetdir,
     # -------------------- Test data preprocessing -------------------- #
     print(20*"=", " Preprocessing test set ", 20*"=")
     print("\t* Reading data...")
-    data = read_data(os.path.join(inputdir, test_file), lowercase=lowercase,
-                     ignore_punct=ignore_punct)
+    data = read_data(os.path.join(inputdir, test_file),
+                     lowercase=lowercase,
+                     ignore_punctuation=ignore_punctuation)
 
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = transform_to_indices(data, worddict, labeldict)
@@ -312,18 +323,18 @@ def preprocess_NLI(inputdir, embeddings_file, targetdir,
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Preprocess some NLI dataset\
- for ESIM')
-    parser.add_argument('--config', default="../config/preproc_cfg.json",
-                        help='Path to a configuration file')
+    parser = argparse.ArgumentParser(description='Preprocess an NLI dataset')
+    parser.add_argument('--config',
+                        default="../config/preprocessing.json",
+                        help='Path to a configuration file for preprocessing')
     args = parser.parse_args()
 
     with open(os.path.normpath(args.config), 'r') as cfg_file:
         config = json.load(cfg_file)
 
-    preprocess_NLI(os.path.normpath(config["data_dir"]),
-                   os.path.normpath(config["embeddings_file"]),
-                   os.path.normpath(config["target_dir"]),
-                   lowercase=config["lowercase"],
-                   ignore_punct=config["ignore_punct"],
-                   num_words=config["num_words"])
+    preprocess_NLI_data(os.path.normpath(config["data_dir"]),
+                        os.path.normpath(config["embeddings_file"]),
+                        os.path.normpath(config["target_dir"]),
+                        lowercase=config["lowercase"],
+                        ignore_punctuation=config["ignore_punctuation"],
+                        num_words=config["num_words"])

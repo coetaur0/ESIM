@@ -70,9 +70,9 @@ class NLIDataset(Dataset):
 
     def __getitem__(self, index):
         return {"premise": self.data["premises"][index],
-                "premise_len": min(self.premises_lengths[index],
-                                   self.max_premise_length),
+                "premise_length": min(self.premises_lengths[index],
+                                      self.max_premise_length),
                 "hypothesis": self.data["hypotheses"][index],
-                "hypothesis_len": min(self.hypotheses_lengths[index],
-                                      self.max_hypothesis_length),
+                "hypothesis_length": min(self.hypotheses_lengths[index],
+                                         self.max_hypothesis_length),
                 "label": self.data["labels"][index]}

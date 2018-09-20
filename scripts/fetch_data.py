@@ -20,8 +20,11 @@ def download(url, targetdir):
     Args:
         url: The url from which the file must be downloaded.
         targetdir: The path to the directory where the file must be saved.
+
+    Returns:
+        The path to the downloaded file.
     """
-    print("* Downloading data from {}".format(url))
+    print("\t* Downloading data from {}...".format(url))
     filepath = os.path.join(targetdir, url.split('/')[-1])
     wget.download(url, filepath)
     return filepath
@@ -29,12 +32,12 @@ def download(url, targetdir):
 
 def unzip(filepath):
     """
-    Extract the data from a zipped file.
+    Extract the data from a zipped file and delete the archive.
 
     Args:
         filepath: The path to the zipped file.
     """
-    print("\n* Extracting: {}".format(filepath))
+    print("\n\t* Extracting: {}...".format(filepath))
     dirpath = os.path.dirname(filepath)
     with zipfile.ZipFile(filepath) as zf:
         for name in zf.namelist():
@@ -44,7 +47,7 @@ def unzip(filepath):
                "Icon" in name:
                 continue
             zf.extract(name, dirpath)
-    # Delete the archive once data has been extracted.
+    # Delete the archive once the data has been extracted.
     os.remove(filepath)
 
 
@@ -60,6 +63,7 @@ def download_unzip(url, targetdir):
     filepath = os.path.join(targetdir, url.split('/')[-1])
 
     if not os.path.exists(targetdir):
+        print("\t* Creating target directory {}...".format(targetdir))
         os.makedirs(targetdir)
 
     # Download and unzip if the target directory is empty.
@@ -67,26 +71,29 @@ def download_unzip(url, targetdir):
         unzip(download(url, targetdir))
     # Skip downloading if the zipped data is already available.
     elif os.path.exists(filepath):
-        print("* Found zipped data - skipping download")
+        print("\t* Found zipped data - skipping download...")
         unzip(filepath)
     # Skip download and unzipping if the unzipped data is already available.
     else:
-        print("* Found unzipped data for {} - skipping download and unzip"
+        print("\t* Found unzipped data for {}, skipping download and unzip..."
               .format(targetdir))
 
 
 if __name__ == "__main__":
+    # Default data.
     snli_url = "https://nlp.stanford.edu/projects/snli/snli_1.0.zip"
     glove_url = "http://www-nlp.stanford.edu/data/glove.840B.300d.zip"
 
     parser = argparse.ArgumentParser(description='Download the SNLI dataset')
-    parser.add_argument('--dataset_url', default=snli_url,
+    parser.add_argument('--dataset_url',
+                        default=snli_url,
                         help='URL of the dataset to download')
-    parser.add_argument('--embeddings_url', default=glove_url,
+    parser.add_argument('--embeddings_url',
+                        default=glove_url,
                         help='URL of the pretrained embeddings to download')
-    parser.add_argument('--target_dir', default=os.path.join('..', 'data'),
-                        help='Path to a dir. where the data must be saved')
-
+    parser.add_argument('--target_dir',
+                        default=os.path.join('..', 'data'),
+                        help='Path to a directory where data must be saved')
     args = parser.parse_args()
 
     if not os.path.exists(args.target_dir):

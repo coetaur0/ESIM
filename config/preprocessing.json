@@ -4,6 +4,6 @@
     "target_dir": "../data/preprocessed",
 
     "lowercase": false,
-    "ignore_punct": false,
-    "num_words": 42000
+    "ignore_punctuation": false,
+    "num_words": null
 }
