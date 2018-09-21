@@ -285,14 +285,6 @@ def main(train_file,
         # Update the optimizer's learning rate with the scheduler.
         scheduler.step(epoch_accuracy)
 
-        epoch_chekpoint = {'epoch': epoch,
-                           'model': model.state_dict(),
-                           'best_score': best_score,
-                           'optimizer': optimizer.state_dict(),
-                           'epochs_count': epochs_count,
-                           'train_losses': train_losses,
-                           'valid_losses': valid_losses}
-
         # Early stopping on validation accuracy.
         if epoch_accuracy < best_score:
             patience_counter += 1
