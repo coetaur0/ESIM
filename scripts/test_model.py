@@ -110,7 +110,7 @@ def main(test_file,
     print(20 * "=",
           " Testing ESIM model on device: {} ".format(device),
           20 * "=")
-    batch_time, total_time, accuracy = test(test_loader, model)
+    batch_time, total_time, accuracy = test(model, test_loader)
 
     print("-> Average batch processing time: {:.4f}s, total test time:\
  {:.4f}s, accuracy: {:.4f}%".format(batch_time, total_time, (accuracy*100)))

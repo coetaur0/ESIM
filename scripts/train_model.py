@@ -232,7 +232,7 @@ def main(train_file,
     # Continuing training from a checkpoint if one was given as argument.
     if checkpoint:
         checkpoint = torch.load(checkpoint)
-        start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch'] + 1
         best_score = checkpoint['best_score']
 
         print("\t* Training will continue on existing model from epoch {}..."
@@ -261,7 +261,7 @@ def main(train_file,
     for epoch in range(start_epoch, epochs+1):
         epochs_count.append(epoch)
 
-        print("\t* Training epoch {}:".format(epoch))
+        print("* Training epoch {}:".format(epoch))
         epoch_time, epoch_loss, epoch_accuracy = train(model,
                                                        train_loader,
                                                        optimizer,
@@ -270,20 +270,28 @@ def main(train_file,
                                                        max_grad_norm)
 
         train_losses.append(epoch_loss)
-        print("\t -> Training time: {:.4f}s, loss = {:.4f}, accuracy: {:.4f}%"
+        print("-> Training time: {:.4f}s, loss = {:.4f}, accuracy: {:.4f}%"
               .format(epoch_time, epoch_loss, (epoch_accuracy*100)))
 
-        print("\t* Validation for epoch {}:".format(epoch))
+        print("* Validation for epoch {}:".format(epoch))
         epoch_time, epoch_loss, epoch_accuracy = validate(model,
                                                           valid_loader,
                                                           criterion)
 
         valid_losses.append(epoch_loss)
-        print("\t -> Valid. time: {:.4f}s, loss: {:.4f}, accuracy: {:.4f}%\n"
+        print("-> Valid. time: {:.4f}s, loss: {:.4f}, accuracy: {:.4f}%\n"
               .format(epoch_time, epoch_loss, (epoch_accuracy*100)))
 
         # Update the optimizer's learning rate with the scheduler.
         scheduler.step(epoch_accuracy)
+
+        epoch_chekpoint = {'epoch': epoch,
+                           'model': model.state_dict(),
+                           'best_score': best_score,
+                           'optimizer': optimizer.state_dict(),
+                           'epochs_count': epochs_count,
+                           'train_losses': train_losses,
+                           'valid_losses': valid_losses}
 
         # Early stopping on validation accuracy.
         if epoch_accuracy < best_score:
@@ -291,21 +299,30 @@ def main(train_file,
         else:
             best_score = epoch_accuracy
             patience_counter = 0
-
-            # Save the model if the score is better or as good as
-            # previous ones.
-            torch.save({'epoch': epoch+1,
+            # Save the best model. The optimizer is not saved to avoid having
+            # a checkpoint file that is too heavy to be shared. To resume
+            # training from the best model, use the 'esim_*.pth.tar'
+            # checkpoints instead.
+            torch.save({'epoch': epoch,
                         'model': model.state_dict(),
                         'best_score': best_score,
-                        'optimizer': optimizer.state_dict(),
                         'epochs_count': epochs_count,
                         'train_losses': train_losses,
                         'valid_losses': valid_losses},
-                       os.path.join(target_dir, "esim_{}.pth.tar"
-                                                .format(epoch)))
+                       os.path.join(target_dir, "best.pth.tar"))
+
+        # Save the model at each epoch.
+        torch.save({'epoch': epoch,
+                    'model': model.state_dict(),
+                    'best_score': best_score,
+                    'optimizer': optimizer.state_dict(),
+                    'epochs_count': epochs_count,
+                    'train_losses': train_losses,
+                    'valid_losses': valid_losses},
+                   os.path.join(target_dir, "esim_{}.pth.tar".format(epoch)))
 
         if patience_counter >= patience:
-            print("\t -> Early stopping: patience limit reached, stopping...")
+            print("-> Early stopping: patience limit reached, stopping...")
             break
 
     # Plotting of the loss curves for the train and validation sets.
@@ -313,8 +330,9 @@ def main(train_file,
     plt.plot(epochs_count, train_losses, '-r')
     plt.plot(epochs_count, valid_losses, '-b')
     plt.xlabel('epoch')
-    plt.ylabel('cross entropy loss')
+    plt.ylabel('loss')
     plt.legend(['Training loss', 'Validation loss'])
+    plt.title('Cross entropy loss')
     plt.show()
 
 
