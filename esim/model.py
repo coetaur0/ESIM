@@ -58,7 +58,7 @@ class ESIM(nn.Module):
                                             _weight=embeddings)
 
         if self.dropout:
-            self._rnn_dropout = RNNDropout(p=dropout)
+            self._rnn_dropout = RNNDropout(p=self.dropout)
             # self._rnn_dropout = nn.Dropout(p=self.dropout)
 
         self._encoding = Seq2SeqEncoder(nn.LSTM,
