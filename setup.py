@@ -14,5 +14,6 @@ setup(name='ESIM',
       install_requires=[
         'numpy',
         'matplotlib',
+        'tqdm',
         'torch'
       ])
