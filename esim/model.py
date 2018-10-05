@@ -64,8 +64,7 @@ class ESIM(nn.Module):
         self._encoding = Seq2SeqEncoder(nn.LSTM,
                                         self.embedding_dim,
                                         self.hidden_size,
-                                        bidirectional=True,
-                                        device=self.device)
+                                        bidirectional=True)
 
         self._attention = SoftmaxAttention()
 
@@ -76,8 +75,7 @@ class ESIM(nn.Module):
         self._composition = Seq2SeqEncoder(nn.LSTM,
                                            self.hidden_size,
                                            self.hidden_size,
-                                           bidirectional=True,
-                                           device=self.device)
+                                           bidirectional=True)
 
         self._classification = nn.Sequential(nn.Dropout(p=self.dropout),
                                              nn.Linear(2*4*self.hidden_size,
@@ -121,8 +119,9 @@ class ESIM(nn.Module):
         embedded_premises = self._word_embedding(premises)
         embedded_hypotheses = self._word_embedding(hypotheses)
 
-        embedded_premises = self._rnn_dropout(embedded_premises)
-        embedded_hypotheses = self._rnn_dropout(embedded_hypotheses)
+        if self.dropout:
+            embedded_premises = self._rnn_dropout(embedded_premises)
+            embedded_hypotheses = self._rnn_dropout(embedded_hypotheses)
 
         encoded_premises = self._encoding(embedded_premises,
                                           premises_lengths)

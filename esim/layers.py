@@ -56,8 +56,7 @@ class Seq2SeqEncoder(nn.Module):
                  num_layers=1,
                  bias=True,
                  dropout=0.0,
-                 bidirectional=False,
-                 device='cpu'):
+                 bidirectional=False):
         """
         Args:
             rnn_type: The type of RNN to use as encoder in the module.
@@ -76,8 +75,6 @@ class Seq2SeqEncoder(nn.Module):
                 probability equal to 'dropout'. Defaults to 0.0.
             bidirectional: If True, the encoder of the module is bidirectional.
                 Defaults to False.
-            device: The name of the device on which the module is being executed.
-                Defaults to 'cpu'.
         """
         assert issubclass(rnn_type, nn.RNNBase),\
             "rnn_type must be a class inheriting from torch.nn.RNNBase"
@@ -91,7 +88,6 @@ class Seq2SeqEncoder(nn.Module):
         self.bias = bias
         self.dropout = dropout
         self.bidirectional = bidirectional
-        self.device = device
 
         self._encoder = rnn_type(input_size,
                                  hidden_size,

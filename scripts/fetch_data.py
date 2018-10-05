@@ -24,7 +24,7 @@ def download(url, targetdir):
     Returns:
         The path to the downloaded file.
     """
-    print("\t* Downloading data from {}...".format(url))
+    print("* Downloading data from {}...".format(url))
     filepath = os.path.join(targetdir, url.split('/')[-1])
     wget.download(url, filepath)
     return filepath
@@ -37,7 +37,7 @@ def unzip(filepath):
     Args:
         filepath: The path to the zipped file.
     """
-    print("\n\t* Extracting: {}...".format(filepath))
+    print("\n* Extracting: {}...".format(filepath))
     dirpath = os.path.dirname(filepath)
     with zipfile.ZipFile(filepath) as zf:
         for name in zf.namelist():
@@ -63,7 +63,7 @@ def download_unzip(url, targetdir):
     filepath = os.path.join(targetdir, url.split('/')[-1])
 
     if not os.path.exists(targetdir):
-        print("\t* Creating target directory {}...".format(targetdir))
+        print("* Creating target directory {}...".format(targetdir))
         os.makedirs(targetdir)
 
     # Download and unzip if the target directory is empty.
@@ -71,11 +71,11 @@ def download_unzip(url, targetdir):
         unzip(download(url, targetdir))
     # Skip downloading if the zipped data is already available.
     elif os.path.exists(filepath):
-        print("\t* Found zipped data - skipping download...")
+        print("* Found zipped data - skipping download...")
         unzip(filepath)
     # Skip download and unzipping if the unzipped data is already available.
     else:
-        print("\t* Found unzipped data for {}, skipping download and unzip..."
+        print("* Found unzipped data for {}, skipping download and unzip..."
               .format(targetdir))
 
 
