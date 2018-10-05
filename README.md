@@ -2,7 +2,7 @@
 Implementation of the ESIM model for natural language inference with PyTorch
 
 This repository contains an implementation with PyTorch of the sequential model presented in the paper 
-"Enhanced LSTM for Natural Language Inference" by Chen et al. in 2017.
+["Enhanced LSTM for Natural Language Inference"](https://arxiv.org/pdf/1609.06038.pdf) by Chen et al. in 2016.
 
 ## How to
 ### Install the package
