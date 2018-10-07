@@ -69,3 +69,5 @@ The pretrained model achieves the following performance on the SNLI dataset:
 | Train |     93.2     |
 | Dev   |     88.5     |
 | Test  |     88.0     |
+
+The results are in line with those presented in the paper by Chen et al.
