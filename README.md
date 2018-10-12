@@ -6,9 +6,10 @@ This repository contains an implementation with PyTorch of the sequential model 
 
 ## How to
 ### Install the package
-To install the dependencies necessary to run the model, first install PyTorch on you machine by following the steps
-described on the [official page](https://pytorch.org/get-started/locally/). Then, simply execute the command `pip install
---upgrade .` from within the cloned repository (at the root, and preferably inside of a [virtual environment](https://docs.python.org/3/tutorial/venv.html)).
+To use the model defined in this repository, first install PyTorch on you machine by following the steps described on the
+package's [official page](https://pytorch.org/get-started/locally/). Then, to install the dependencies necessary to run
+the model, simply execute the command `pip install --upgrade .` from within the cloned repository (at the root, and preferably
+inside of a [virtual environment](https://docs.python.org/3/tutorial/venv.html)).
 
 ### Fetch the data to train and test the model
 The *fetch_data.py* script located in the *scripts/* folder of this repository can be used to download some NLI dataset and
