@@ -96,7 +96,7 @@ def masked_softmax(tensor, mask):
     result = nn.functional.softmax(reshaped_tensor * reshaped_mask, dim=-1)
     result = result * reshaped_mask
     # 1e-13 is added to avoid divisions by zero.
-    result = result / (result.sum(dim=1, keepdim=True) + 1e-13)
+    result = result / (result.sum(dim=-1, keepdim=True) + 1e-13)
 
     return result.view(*tensor_shape)
 
