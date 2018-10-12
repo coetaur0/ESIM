@@ -6,8 +6,9 @@ This repository contains an implementation with PyTorch of the sequential model 
 
 ## How to
 ### Install the package
-To install the dependencies necessary to run the model, simply execute the command `pip install --upgrade .` from within the
-cloned repository (at the root, and preferably inside of a [virtual environment](https://docs.python.org/3/tutorial/venv.html)).
+To install the dependencies necessary to run the model, first install PyTorch on you machine by following the steps
+described on the [official page](https://pytorch.org/get-started/locally/). Then, simply execute the command `pip install
+--upgrade .` from within the cloned repository (at the root, and preferably inside of a [virtual environment](https://docs.python.org/3/tutorial/venv.html)).
 
 ### Fetch the data to train and test the model
 The *fetch_data.py* script located in the *scripts/* folder of this repository can be used to download some NLI dataset and
@@ -67,7 +68,7 @@ The pretrained model achieves the following performance on the SNLI dataset:
 | Split | Accuracy (%) |
 |-------|--------------|
 | Train |     93.2     |
-| Dev   |     88.5     |
+| Dev   |     88.4     |
 | Test  |     88.0     |
 
 The results are in line with those presented in the paper by Chen et al.
