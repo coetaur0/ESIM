@@ -1,5 +1,5 @@
 """
-Preprocess some NLI dataset and word embeddings to be used by the LEAN model.
+Preprocess the SNLI dataset and word embeddings to be used by the ESIM model.
 """
 # Aurelien Coet, 2018.
 
@@ -23,7 +23,7 @@ def preprocess_SNLI_data(inputdir,
                          eos=None):
     """
     Preprocess the data from the SNLI corpus so it can be used by the
-    LEAN model.
+    ESIM model.
     Compute a worddict from the train set, and transform the words in
     the sentences of the corpus to their indices, as well as the labels.
     Build an embedding matrix from pretrained word vectors.
@@ -33,9 +33,6 @@ def preprocess_SNLI_data(inputdir,
         inputdir: The path to the directory containing the NLI corpus.
         embeddings_file: The path to the file containing the pretrained
             word vectors that must be used to build the embedding matrix.
-        lear_embeddings_file: The path to the file containing the LEAR
-            embeddings to compute lexical entailment on the words of
-            the premises and hypotheses.
         targetdir: The path to the directory where the preprocessed data
             must be saved.
         lowercase: Boolean value indicating whether to lowercase the premises
@@ -124,10 +121,10 @@ def preprocess_SNLI_data(inputdir,
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Preprocess an NLI dataset')
+    parser = argparse.ArgumentParser(description='Preprocess the SNLI dataset')
     parser.add_argument('--config',
-                        default="../config/preprocessing.json",
-                        help='Path to a configuration file for preprocessing')
+                        default="../config/snli_preprocessing.json",
+                        help='Path to a configuration file for preprocessing SNLI')
     args = parser.parse_args()
 
     with open(os.path.normpath(args.config), 'r') as cfg_file:
