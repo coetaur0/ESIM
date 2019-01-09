@@ -73,3 +73,5 @@ The pretrained model achieves the following performance on the SNLI dataset:
 | Test  |     88.0     |
 
 The results are in line with those presented in the paper by Chen et al.
+
+On the [Breaking NLI](https://github.com/BIU-NLP/Breaking_NLI) dataset, published by [Glockner et al. in 2018](https://arxiv.org/pdf/1805.02266.pdf), the model reaches **65.5%** accuracy, as reported in the paper.
