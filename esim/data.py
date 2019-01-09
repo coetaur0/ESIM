@@ -58,7 +58,8 @@ class Preprocessor(object):
     def read_data(self, filepath):
         """
         Read the premises, hypotheses and labels from some NLI dataset's
-        file and return them in a dictionary.
+        file and return them in a dictionary. The file should be in the same
+        form as SNLI's .txt files.
 
         Args:
             filepath: The path to a file containing some premises, hypotheses
