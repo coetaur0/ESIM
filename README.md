@@ -33,7 +33,7 @@ preprocessed first, so that the worddict produced for it can be used to preproce
 
 The scripts' usage is the following (replace the \* with *snli* or *bnli*):
 ```
-preprocess_\*.py [-h] [--config CONFIG]
+preprocess_*.py [-h] [--config CONFIG]
 ```
 where `config` is the path to a configuration file defining the parameters to be used for preprocessing. A default configuration
 file can be found in the *config/* folder of this repository.
