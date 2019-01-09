@@ -27,11 +27,13 @@ where `taget_dir` is the path to a directory where the downloaded data must be s
 
 ### Preprocess the data
 Before the downloaded corpus and embeddings can be used in the ESIM model, they need to be preprocessed. This can be done with
-the *preprocess_data.py* script in the *scripts/* folder of this repository. 
+the *preprocess_\*.py* scripts in the *scripts/* folder of this repository. The *preprocess_snli.py* script can be used to 
+preprocess SNLI, and *preprocess_bnli.py* to preprocess the Breaking NLI (BNLI) dataset. Note that the SNLI data should be 
+preprocessed first, so that the worddict produced for it can be used to preprocess BNLI.
 
-The script's usage is the following:
+The scripts' usage is the following (replace the \* with *snli* or *bnli*):
 ```
-preprocess_data.py [-h] [--config CONFIG]
+preprocess_*.py [-h] [--config CONFIG]
 ```
 where `config` is the path to a configuration file defining the parameters to be used for preprocessing. A default configuration
 file can be found in the *config/* folder of this repository.
@@ -73,3 +75,5 @@ The pretrained model achieves the following performance on the SNLI dataset:
 | Test  |     88.0     |
 
 The results are in line with those presented in the paper by Chen et al.
+
+On the [Breaking NLI](https://github.com/BIU-NLP/Breaking_NLI) dataset, published by [Glockner et al. in 2018](https://arxiv.org/pdf/1805.02266.pdf), the model reaches **65.5%** accuracy, as reported in the paper.
