@@ -16,7 +16,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from esim.dataset import NLIDataset
+from esim.data import NLIDataset
 from esim.model import ESIM
 from esim.utils import correct_predictions
 

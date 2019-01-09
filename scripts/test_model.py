@@ -11,7 +11,7 @@ import torch
 import json
 
 from torch.utils.data import DataLoader
-from esim.dataset import NLIDataset
+from esim.data import NLIDataset
 from esim.model import ESIM
 from esim.utils import correct_predictions
 

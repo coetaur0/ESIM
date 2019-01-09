@@ -5,5 +5,11 @@
 
     "lowercase": false,
     "ignore_punctuation": false,
-    "num_words": null
+    "num_words": null,
+    "stopwords": [],
+    "labeldict": {"entailment": 0,
+                  "neutral": 1,
+                  "contradiction": 2},
+    "bos": "_BOS_",
+    "eos": "_EOS_"
 }
