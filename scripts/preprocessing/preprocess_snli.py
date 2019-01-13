@@ -45,9 +45,9 @@ def preprocess_SNLI_data(inputdir,
         stopwords: A list of words that must be ignored when preprocessing
             the data. Defaults to an empty list.
         bos: A string indicating the symbol to use for beginning of sentence
-            tokens. If set to None, no such tokens are used. Defaults to None.
+            tokens. If set to None, bos tokens aren't used. Defaults to None.
         eos: A string indicating the symbol to use for end of sentence tokens.
-            If set to None, no such tokens are used. Defaults to None.
+            If set to None, eos tokens aren't used. Defaults to None.
     """
     if not os.path.exists(targetdir):
         os.makedirs(targetdir)
@@ -112,7 +112,7 @@ def preprocess_SNLI_data(inputdir,
 
     # -------------------- Embeddings preprocessing -------------------- #
     print(20*"=", " Preprocessing embeddings ", 20*"=")
-    print("\t* Building embedding matrices and saving them...")
+    print("\t* Building embedding matrix and saving it...")
     embed_matrix = preprocessor.build_embedding_matrix(embeddings_file)
     with open(os.path.join(targetdir, "embeddings.pkl"), 'wb') as pkl_file:
         pickle.dump(embed_matrix, pkl_file)
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Preprocess the SNLI dataset')
     parser.add_argument('--config',
-                        default="../config/snli_preprocessing.json",
+                        default="../config/preprocessing/snli_preprocessing.json",
                         help='Path to a configuration file for preprocessing SNLI')
     args = parser.parse_args()
 

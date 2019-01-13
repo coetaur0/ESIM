@@ -1,7 +1,7 @@
 {
     "data_file": "../data/dataset/bnli.jsonl",
-    "target_dir": "../data/preprocessed",
-    "worddict": "../data/preprocessed/worddict.pkl",
+    "target_dir": "../data/preprocessed/BNLI",
+    "worddict": "../data/preprocessed/SNLI/worddict.pkl",
     "labeldict": {"entailment": 0,
                   "neutral": 1,
                   "contradiction": 2}

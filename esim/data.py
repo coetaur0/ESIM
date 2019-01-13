@@ -1,5 +1,5 @@
 """
-Dataset definition for NLI datasets.
+Preprocessor and dataset definition for NLI.
 """
 # Aurelien Coet, 2018.
 
@@ -70,8 +70,8 @@ class Preprocessor(object):
             A dictionary containing three lists, one for the premises, one for
             the hypotheses, and one for the labels in the input data.
         """
-        with open(filepath, 'r') as input_data:
-            premises, hypotheses, labels = [], [], []
+        with open(filepath, 'r', encoding='utf8') as input_data:
+            ids, premises, hypotheses, labels = [], [], [], []
 
             # Translation tables to remove parentheses and punctuation from
             # strings.
@@ -89,6 +89,7 @@ class Preprocessor(object):
                 if line[0] == '-':
                     continue
 
+                pair_id = line[7]
                 premise = line[1]
                 hypothesis = line[2]
 
@@ -110,8 +111,10 @@ class Preprocessor(object):
                 hypotheses.append([w for w in hypothesis.rstrip().split()
                                    if w not in self.stopwords])
                 labels.append(line[0])
+                ids.append(pair_id)
 
-            return {"premises": premises,
+            return {"ids": ids,
+                    "premises": premises,
                     "hypotheses": hypotheses,
                     "labels": labels}
 
@@ -220,16 +223,24 @@ class Preprocessor(object):
             A dictionary containing the transformed premises, hypotheses and
             labels.
         """
-        transformed_data = {"premises": [], "hypotheses": [], "labels": []}
+        transformed_data = {"ids": [],
+                            "premises": [],
+                            "hypotheses": [],
+                            "labels": []}
 
         for i, premise in enumerate(data['premises']):
             # Ignore sentences that have a label for which no index was
             # defined in 'labeldict'.
             label = data["labels"][i]
-            if label not in self.labeldict:
+            if label not in self.labeldict and label != "hidden":
                 continue
 
-            transformed_data["labels"].append(self.labeldict[label])
+            transformed_data["ids"].append(data["ids"][i])
+
+            if label == "hidden":
+                transformed_data["labels"].append(-1)
+            else:
+                transformed_data["labels"].append(self.labeldict[label])
 
             indices = self.words_to_indices(premise)
             transformed_data["premises"].append(indices)
@@ -336,7 +347,8 @@ class NLIDataset(Dataset):
 
         self.num_sequences = len(data["premises"])
 
-        self.data = {"premises": torch.ones((self.num_sequences,
+        self.data = {"ids": [],
+                     "premises": torch.ones((self.num_sequences,
                                              self.max_premise_length),
                                             dtype=torch.long) * padding_idx,
                      "hypotheses": torch.ones((self.num_sequences,
@@ -345,6 +357,7 @@ class NLIDataset(Dataset):
                      "labels": torch.tensor(data["labels"], dtype=torch.long)}
 
         for i, premise in enumerate(data["premises"]):
+            self.data["ids"].append(data["ids"][i])
             end = min(len(premise), self.max_premise_length)
             self.data["premises"][i][:end] = torch.tensor(premise[:end])
 
@@ -356,7 +369,8 @@ class NLIDataset(Dataset):
         return self.num_sequences
 
     def __getitem__(self, index):
-        return {"premise": self.data["premises"][index],
+        return {"id": self.data["ids"][index],
+                "premise": self.data["premises"][index],
                 "premise_length": min(self.premises_lengths[index],
                                       self.max_premise_length),
                 "hypothesis": self.data["hypotheses"][index],

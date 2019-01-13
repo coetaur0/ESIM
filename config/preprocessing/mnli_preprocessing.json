@@ -1,0 +1,15 @@
+{
+    "data_dir": "../data/dataset/multinli_1.0",
+    "embeddings_file": "../data/embeddings/glove.840B.300d.txt",
+    "target_dir": "../data/preprocessed/MNLI",
+
+    "lowercase": false,
+    "ignore_punctuation": false,
+    "num_words": null,
+    "stopwords": [],
+    "labeldict": {"entailment": 0,
+                  "neutral": 1,
+                  "contradiction": 2},
+    "bos": "_BOS_",
+    "eos": "_EOS_"
+}

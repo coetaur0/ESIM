@@ -3,12 +3,10 @@ Test the ESIM model on some preprocessed dataset.
 """
 # Aurelien Coet, 2018.
 
-import os
 import time
 import pickle
 import argparse
 import torch
-import json
 
 from torch.utils.data import DataLoader
 from esim.data import NLIDataset
@@ -18,7 +16,7 @@ from esim.utils import correct_predictions
 
 def test(model, dataloader):
     """
-    Test the accuracy of a model on some dataset.
+    Test the accuracy of a model on some labelled test dataset.
 
     Args:
         model: The torch module on which testing must be performed.
@@ -64,13 +62,7 @@ def test(model, dataloader):
     return batch_time, total_time, accuracy
 
 
-def main(test_file,
-         pretrained_file,
-         vocab_size,
-         embedding_dim,
-         hidden_size=300,
-         num_classes=3,
-         batch_size=32):
+def main(test_file, pretrained_file, batch_size=32):
     """
     Test the ESIM model with pretrained weights on some dataset.
 
@@ -91,6 +83,14 @@ def main(test_file,
 
     print(20 * "=", " Preparing for testing ", 20 * "=")
 
+    checkpoint = torch.load(pretrained_file)
+
+    # Retrieving model parameters from checkpoint.
+    vocab_size = checkpoint['model']['_word_embedding.weight'].size(0)
+    embedding_dim = checkpoint['model']['_word_embedding.weight'].size(1)
+    hidden_size = checkpoint['model']['_projection.0.weight'].size(0)
+    num_classes = checkpoint['model']['_classification.4.weight'].size(0)
+
     print("\t* Loading test data...")
     with open(test_file, 'rb') as pkl:
         test_data = NLIDataset(pickle.load(pkl))
@@ -104,7 +104,6 @@ def main(test_file,
                  num_classes=num_classes,
                  device=device).to(device)
 
-    checkpoint = torch.load(pretrained_file)
     model.load_state_dict(checkpoint['model'])
 
     print(20 * "=",
@@ -119,19 +118,14 @@ def main(test_file,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test the ESIM model on\
  some dataset')
+    parser.add_argument('test_data',
+                        help="Path to a file containing preprocessed test data")
     parser.add_argument('checkpoint',
                         help="Path to a checkpoint with a pretrained model")
-    parser.add_argument('--config', default='../config/test.json',
-                        help='Path to a configuration file')
+    parser.add_argument('--batch_size', type=int, default=32,
+                        help='Batch size to use during testing')
     args = parser.parse_args()
 
-    with open(os.path.normpath(args.config), 'r') as config_file:
-        config = json.load(config_file)
-
-    main(os.path.normpath(config['test_data']),
+    main(args.test_data,
          args.checkpoint,
-         config['vocab_size'],
-         config['embedding_dim'],
-         config['hidden_size'],
-         config['num_classes'],
-         config['batch_size'])
+         args.batch_size)

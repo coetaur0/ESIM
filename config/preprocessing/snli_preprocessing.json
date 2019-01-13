@@ -1,7 +1,7 @@
 {
     "data_dir": "../data/dataset/snli_1.0",
     "embeddings_file": "../data/embeddings/glove.840B.300d.txt",
-    "target_dir": "../data/preprocessed",
+    "target_dir": "../data/preprocessed/SNLI",
 
     "lowercase": false,
     "ignore_punctuation": false,

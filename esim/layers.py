@@ -1,5 +1,5 @@
 """
-Definition of custom layers of the ESIM model.
+Definition of custom layers for the ESIM model.
 """
 # Aurelien Coet, 2018.
 

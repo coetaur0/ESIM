@@ -28,14 +28,16 @@ def jsonl_to_txt(input_file, output_file):
             data = json.loads(line)
 
             # Sentences in the Breaking NLI data set aren't distributed in the
-            # form of binary parses, so we tokenise them with nltk.
+            # form of binary parses, so we must tokenise them with nltk.
             sentence1 = word_tokenize(data['sentence1'])
             sentence1 = " ".join(sentence1)
             sentence2 = word_tokenize(data['sentence2'])
             sentence2 = " ".join(sentence2)
 
+            # The 5 tabs between sentence 2 and the pairID are added to
+            # follow the same structure as the txt files in SNLI and MNLI.
             output_f.write(data['gold_label'] + "\t" + sentence1 + "\t" +
-                           sentence2 + "\t\t\t\t\t\t" + str(data['pairID']) +
+                           sentence2 + "\t\t\t\t\t" + str(data['pairID']) +
                            "\n")
 
 
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocess the Breaking\
  NLI (BNLI) dataset')
     parser.add_argument('--config',
-                        default="../config/bnli_preprocessing.json",
+                        default="../config/preprocessing/bnli_preprocessing.json",
                         help='Path to a configuration file for preprocessing BNLI')
     args = parser.parse_args()
 
