@@ -25,13 +25,17 @@ fetch_data.py [-h] [--dataset_url DATASET_URL]
 ```
 where `taget_dir` is the path to a directory where the downloaded data must be saved (defaults to *../data/*).
 
+For MultiNLI, the matched and mismatched test sets need to be manually downloaded from Kaggle and the corresponding .txt files 
+copied in the *multinli_1.0* dataset folder.
+
 ### Preprocess the data
 Before the downloaded corpus and embeddings can be used in the ESIM model, they need to be preprocessed. This can be done with
-the *preprocess_\*.py* scripts in the *scripts/* folder of this repository. The *preprocess_snli.py* script can be used to 
-preprocess SNLI, and *preprocess_bnli.py* to preprocess the Breaking NLI (BNLI) dataset. Note that the SNLI data should be 
-preprocessed first, so that the worddict produced for it can be used to preprocess BNLI.
+the *preprocess_\*.py* scripts in the *scripts/preprocessing* folder of this repository. The *preprocess_snli.py* script can be 
+used to preprocess SNLI, *preprocess_mnli.py* to preprocess MultiNLI, and *preprocess_bnli.py* to preprocess the Breaking NLI 
+(BNLI) dataset. Note that when calling the script fot BNLI, the SNLI data should have been preprocessed first, so that the 
+worddict produced for it can be used on BNLI.
 
-The scripts' usage is the following (replace the \* with *snli* or *bnli*):
+The scripts' usage is the following (replace the \* with *snli*, *mnli* or *bnli*):
 ```
 preprocess_*.py [-h] [--config CONFIG]
 ```
@@ -39,27 +43,38 @@ where `config` is the path to a configuration file defining the parameters to be
 file can be found in the *config/* folder of this repository.
 
 ### Train the model
-The *train_model.py* script can be used to train the ESIM model on some training data and validate it on some validation data.
+The *train_\*.py* scripts in the *scripts/training* folder can be used to train the ESIM model on some training data and 
+validate it on some validation data.
 
-The script's usage is:
+The script's usage is (replace the \* with *snli* or *mnli*):
 ```
-train_model.py [-h] [--config CONFIG] [--checkpoint CHECKPOINT]
+train_*.py [-h] [--config CONFIG] [--checkpoint CHECKPOINT]
 ```
 where `config` is a configuration file (a default one is located in the *config/* folder), and `checkpoint` is an optional
 checkpoint from which training can be resumed. Checkpoints are created by the script after each training epoch, with the name
 *esim_\*.pth.tar*, where '\*' indicates the epoch's number.
 
 ### Test the model
-The *test_model.py* script can be used to test the model on some test data.
+The *test_\*.py* scripts in the *scripts/testing* folder can be used to test a pretrained ESIM model on some test data.
 
-Its usage is:
+To test on SNLI, use the *test_snli.py* script as follows:
 ```
-test_model.py [-h] [--config CONFIG] checkpoint
+test_snli.py [-h] test_data checkpoint
 ```
-where `config` is a configuration file (again, a default one is available in *config/*) and `checkpoint` is either one of the 
-checkpoints created after the training epochs, or the best model seen during training, which is saved in 
-*data/checkpoints/best.pth.tar* (the difference between the *esim_\*.pth.tar* files and *best.pth.tar* is that the latter cannot
-be used to resume training, as it doesn't contain the optimizer's state).
+where `test_data` is the path to some preprocessed test set, and `checkpoint` is the path to a checkpoint produced by the 
+*train_snli.py* script (either one of the checkpoints created after the training epochs, or the best model seen during training, 
+which is saved in *data/checkpoints/SNLI/best.pth.tar* - the difference between the *esim_\*.pth.tar* files and *best.pth.tar* 
+is that the latter cannot be used to resume training, as it doesn't contain the optimizer's state).
+The *test_snli.py* script can also be used on the Breaking NLI dataset with a model pretrained on SNLI.
+
+To test on MultiNLI, use the *test_mnli.py* script as follows:
+```
+test_mnli.py [-h] [--config CONFIG] checkpoint
+```
+where `config` is a configuration file (a default one is available in *config/testing*) and `checkpoint` is a checkpoint 
+produced by the *train_mnli.py* script.
+The *test_mnli.py* script makes prediction on the matched and mismatched test sets for MultiNLI available on Kaggle and saves 
+them in a .csv file.
 
 ## Results
 A pretrained model is made available in the *data/checkpoints* folder of this repository. The model was trained with the
@@ -77,3 +92,12 @@ The pretrained model achieves the following performance on the SNLI dataset:
 The results are in line with those presented in the paper by Chen et al.
 
 On the [Breaking NLI](https://github.com/BIU-NLP/Breaking_NLI) dataset, published by [Glockner et al. in 2018](https://arxiv.org/pdf/1805.02266.pdf), the model reaches **65.5%** accuracy, as reported in the paper.
+
+On MultiNLI, the model performs as follows:
+
+| Split | Matched | Mismatched |
+|-------|---------|------------|
+| Dev   |  77.0 % |   76.8%    |
+| Test  |  76.6 % |   75.8 %   |
+
+The results are above what was reported by Williams et al. in the MultiNLI paper.
