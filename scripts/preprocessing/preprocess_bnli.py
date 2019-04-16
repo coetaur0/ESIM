@@ -5,9 +5,9 @@ Preprocess the Breaking NLI data set.
 import os
 import json
 import pickle
+import argparse
 
 from nltk import word_tokenize
-
 from esim.data import Preprocessor
 
 
@@ -86,19 +86,28 @@ def preprocess_BNLI_data(input_file,
 
 
 if __name__ == "__main__":
-    import argparse
+    default_config = "../../config/preprocessing/bnli_preprocessing.json"
 
-    parser = argparse.ArgumentParser(description='Preprocess the Breaking\
- NLI (BNLI) dataset')
-    parser.add_argument('--config',
-                        default="../config/preprocessing/bnli_preprocessing.json",
-                        help='Path to a configuration file for preprocessing BNLI')
+    parser = argparse.ArgumentParser(description="Preprocess the Breaking\
+ NLI (BNLI) dataset")
+    parser.add_argument("--config",
+                        default=default_config,
+                        help="Path to a configuration file for preprocessing BNLI")
     args = parser.parse_args()
 
-    with open(os.path.normpath(args.config), 'r') as cfg_file:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    if args.config == default_config:
+        config_path = os.path.join(script_dir, args.config)
+    else:
+        config_path = args.config
+
+    with open(os.path.normpath(config_path), "r") as cfg_file:
         config = json.load(cfg_file)
 
-    preprocess_BNLI_data(os.path.normpath(config["data_file"]),
-                         os.path.normpath(config["target_dir"]),
-                         os.path.normpath(config["worddict"]),
-                         config["labeldict"])
+    preprocess_BNLI_data(
+        os.path.normpath(os.path.join(script_dir, config["data_file"])),
+        os.path.normpath(os.path.join(script_dir, config["target_dir"])),
+        os.path.normpath(os.path.join(script_dir, config["worddict"])),
+        config["labeldict"]
+    )

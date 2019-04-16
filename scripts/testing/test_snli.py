@@ -41,11 +41,11 @@ def test(model, dataloader):
             batch_start = time.time()
 
             # Move input and output data to the GPU if one is used.
-            premises = batch['premise'].to(device)
-            premises_lengths = batch['premise_length'].to(device)
-            hypotheses = batch['hypothesis'].to(device)
-            hypotheses_lengths = batch['hypothesis_length'].to(device)
-            labels = batch['label'].to(device)
+            premises = batch["premise"].to(device)
+            premises_lengths = batch["premise_length"].to(device)
+            hypotheses = batch["hypothesis"].to(device)
+            hypotheses_lengths = batch["hypothesis_length"].to(device)
+            labels = batch["label"].to(device)
 
             _, probs = model(premises,
                              premises_lengths,
@@ -86,13 +86,13 @@ def main(test_file, pretrained_file, batch_size=32):
     checkpoint = torch.load(pretrained_file)
 
     # Retrieving model parameters from checkpoint.
-    vocab_size = checkpoint['model']['_word_embedding.weight'].size(0)
-    embedding_dim = checkpoint['model']['_word_embedding.weight'].size(1)
-    hidden_size = checkpoint['model']['_projection.0.weight'].size(0)
-    num_classes = checkpoint['model']['_classification.4.weight'].size(0)
+    vocab_size = checkpoint["model"]["_word_embedding.weight"].size(0)
+    embedding_dim = checkpoint["model"]['_word_embedding.weight'].size(1)
+    hidden_size = checkpoint["model"]["_projection.0.weight"].size(0)
+    num_classes = checkpoint["model"]["_classification.4.weight"].size(0)
 
     print("\t* Loading test data...")
-    with open(test_file, 'rb') as pkl:
+    with open(test_file, "rb") as pkl:
         test_data = NLIDataset(pickle.load(pkl))
 
     test_loader = DataLoader(test_data, shuffle=False, batch_size=batch_size)
@@ -104,7 +104,7 @@ def main(test_file, pretrained_file, batch_size=32):
                  num_classes=num_classes,
                  device=device).to(device)
 
-    model.load_state_dict(checkpoint['model'])
+    model.load_state_dict(checkpoint["model"])
 
     print(20 * "=",
           " Testing ESIM model on device: {} ".format(device),
@@ -116,14 +116,14 @@ def main(test_file, pretrained_file, batch_size=32):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Test the ESIM model on\
- some dataset')
-    parser.add_argument('test_data',
+    parser = argparse.ArgumentParser(description="Test the ESIM model on\
+ some dataset")
+    parser.add_argument("test_data",
                         help="Path to a file containing preprocessed test data")
-    parser.add_argument('checkpoint',
+    parser.add_argument("checkpoint",
                         help="Path to a checkpoint with a pretrained model")
-    parser.add_argument('--batch_size', type=int, default=32,
-                        help='Batch size to use during testing')
+    parser.add_argument("--batch_size", type=int, default=32,
+                        help="Batch size to use during testing")
     args = parser.parse_args()
 
     main(args.test_data,

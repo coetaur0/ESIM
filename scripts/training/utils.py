@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 
 from tqdm import tqdm
-
 from esim.utils import correct_predictions
 
 
@@ -49,11 +48,11 @@ def train(model,
         batch_start = time.time()
 
         # Move input and output data to the GPU if it is used.
-        premises = batch['premise'].to(device)
-        premises_lengths = batch['premise_length'].to(device)
-        hypotheses = batch['hypothesis'].to(device)
-        hypotheses_lengths = batch['hypothesis_length'].to(device)
-        labels = batch['label'].to(device)
+        premises = batch["premise"].to(device)
+        premises_lengths = batch["premise_length"].to(device)
+        hypotheses = batch["hypothesis"].to(device)
+        hypotheses_lengths = batch["hypothesis_length"].to(device)
+        labels = batch["label"].to(device)
 
         optimizer.zero_grad()
 
@@ -113,11 +112,11 @@ def validate(model, dataloader, criterion):
     with torch.no_grad():
         for batch in dataloader:
             # Move input and output data to the GPU if one is used.
-            premises = batch['premise'].to(device)
-            premises_lengths = batch['premise_length'].to(device)
-            hypotheses = batch['hypothesis'].to(device)
-            hypotheses_lengths = batch['hypothesis_length'].to(device)
-            labels = batch['label'].to(device)
+            premises = batch["premise"].to(device)
+            premises_lengths = batch["premise_length"].to(device)
+            hypotheses = batch["hypothesis"].to(device)
+            hypotheses_lengths = batch["hypothesis_length"].to(device)
+            labels = batch["label"].to(device)
 
             logits, probs = model(premises,
                                   premises_lengths,

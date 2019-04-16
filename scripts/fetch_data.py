@@ -85,23 +85,23 @@ if __name__ == "__main__":
     glove_url = "http://www-nlp.stanford.edu/data/glove.840B.300d.zip"
 
     parser = argparse.ArgumentParser(description='Download the SNLI dataset')
-    parser.add_argument('--dataset_url',
+    parser.add_argument("--dataset_url",
                         default=snli_url,
-                        help='URL of the dataset to download')
-    parser.add_argument('--embeddings_url',
+                        help="URL of the dataset to download")
+    parser.add_argument("--embeddings_url",
                         default=glove_url,
-                        help='URL of the pretrained embeddings to download')
-    parser.add_argument('--target_dir',
-                        default=os.path.join('..', 'data'),
-                        help='Path to a directory where data must be saved')
+                        help="URL of the pretrained embeddings to download")
+    parser.add_argument("--target_dir",
+                        default=os.path.join("..", "data"),
+                        help="Path to a directory where data must be saved")
     args = parser.parse_args()
 
     if not os.path.exists(args.target_dir):
         os.makedirs(args.target_dir)
 
-    print(20*'=', "Fetching the dataset:", 20*'=')
+    print(20*"=", "Fetching the dataset:", 20*'=')
     download_unzip(args.dataset_url, os.path.join(args.target_dir, "dataset"))
 
-    print(20*'=', "Fetching the word embeddings:", 20*'=')
+    print(20*"=", "Fetching the word embeddings:", 20*"=")
     download_unzip(args.embeddings_url,
                    os.path.join(args.target_dir, "embeddings"))

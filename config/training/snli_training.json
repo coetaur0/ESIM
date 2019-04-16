@@ -1,9 +1,9 @@
 {
-    "train_data": "../data/preprocessed/SNLI/train_data.pkl",
-    "valid_data": "../data/preprocessed/SNLI/dev_data.pkl",
-    "embeddings": "../data/preprocessed/SNLI/embeddings.pkl",
+    "train_data": "../../data/preprocessed/SNLI/train_data.pkl",
+    "valid_data": "../../data/preprocessed/SNLI/dev_data.pkl",
+    "embeddings": "../../data/preprocessed/SNLI/embeddings.pkl",
 
-    "target_dir": "../data/checkpoints/SNLI",
+    "target_dir": "../../data/checkpoints/SNLI",
     
     "hidden_size": 300,
     "dropout": 0.5,

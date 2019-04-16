@@ -1,10 +1,10 @@
 {
-    "train_data": "../data/preprocessed/MNLI/train_data.pkl",
-    "valid_data": {"matched": "../data/preprocessed/MNLI/matched_dev_data.pkl",
-                   "mismatched": "../data/preprocessed/MNLI/mismatched_dev_data.pkl"},
-    "embeddings": "../data/preprocessed/MNLI/embeddings.pkl",
+    "train_data": "../../data/preprocessed/MNLI/train_data.pkl",
+    "valid_data": {"matched": "../../data/preprocessed/MNLI/matched_dev_data.pkl",
+                   "mismatched": "../../data/preprocessed/MNLI/mismatched_dev_data.pkl"},
+    "embeddings": "../../data/preprocessed/MNLI/embeddings.pkl",
 
-    "target_dir": "../data/checkpoints/MNLI",
+    "target_dir": "../../data/checkpoints/MNLI",
     
     "hidden_size": 300,
     "dropout": 0.5,

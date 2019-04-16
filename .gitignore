@@ -105,3 +105,9 @@ venv.bak/
 
 # VSCode
 .vscode
+
+# Data
+data/dataset/snli_1.0
+data/dataset/mnli_1.0
+data/embeddings
+data/preprocessed

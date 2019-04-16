@@ -70,23 +70,23 @@ class Preprocessor(object):
             A dictionary containing three lists, one for the premises, one for
             the hypotheses, and one for the labels in the input data.
         """
-        with open(filepath, 'r', encoding='utf8') as input_data:
+        with open(filepath, "r", encoding="utf8") as input_data:
             ids, premises, hypotheses, labels = [], [], [], []
 
             # Translation tables to remove parentheses and punctuation from
             # strings.
-            parentheses_table = str.maketrans({'(': None, ')': None})
-            punct_table = str.maketrans({key: ' '
+            parentheses_table = str.maketrans({"(": None, ")": None})
+            punct_table = str.maketrans({key: " "
                                          for key in string.punctuation})
 
             # Ignore the headers on the first line of the file.
             next(input_data)
 
             for line in input_data:
-                line = line.strip().split('\t')
+                line = line.strip().split("\t")
 
                 # Ignore sentences that have no gold label.
-                if line[0] == '-':
+                if line[0] == "-":
                     continue
 
                 pair_id = line[7]
@@ -130,8 +130,8 @@ class Preprocessor(object):
                 'read_data' method of the Preprocessor class.
         """
         words = []
-        [words.extend(sentence) for sentence in data['premises']]
-        [words.extend(sentence) for sentence in data['hypotheses']]
+        [words.extend(sentence) for sentence in data["premises"]]
+        [words.extend(sentence) for sentence in data["hypotheses"]]
 
         counts = Counter(words)
         num_words = self.num_words
@@ -157,7 +157,7 @@ class Preprocessor(object):
             self.worddict[word[0]] = i + offset
 
         if self.labeldict == {}:
-            label_names = set(data['labels'])
+            label_names = set(data["labels"])
             self.labeldict = {label_name: i
                               for i, label_name in enumerate(label_names)}
 
@@ -184,7 +184,7 @@ class Preprocessor(object):
             else:
                 # Words absent from 'worddict' are treated as a special
                 # out-of-vocabulary word (OOV).
-                index = self.worddict['_OOV_']
+                index = self.worddict["_OOV_"]
             indices.append(index)
         # Add the end of sentence token at the end of the sentence if one
         # is defined.
@@ -228,7 +228,7 @@ class Preprocessor(object):
                             "hypotheses": [],
                             "labels": []}
 
-        for i, premise in enumerate(data['premises']):
+        for i, premise in enumerate(data["premises"]):
             # Ignore sentences that have a label for which no index was
             # defined in 'labeldict'.
             label = data["labels"][i]
@@ -266,7 +266,7 @@ class Preprocessor(object):
         """
         # Load the word embeddings in a dictionnary.
         embeddings = {}
-        with open(embeddings_file, 'r', encoding='utf8') as input_data:
+        with open(embeddings_file, "r", encoding="utf8") as input_data:
             for line in input_data:
                 line = line.split()
 

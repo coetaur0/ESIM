@@ -5,6 +5,7 @@ Preprocess the SNLI dataset and word embeddings to be used by the ESIM model.
 
 import os
 import pickle
+import argparse
 import fnmatch
 import json
 
@@ -57,11 +58,11 @@ def preprocess_SNLI_data(inputdir,
     dev_file = ""
     test_file = ""
     for file in os.listdir(inputdir):
-        if fnmatch.fnmatch(file, '*_train.txt'):
+        if fnmatch.fnmatch(file, "*_train.txt"):
             train_file = file
-        elif fnmatch.fnmatch(file, '*_dev.txt'):
+        elif fnmatch.fnmatch(file, "*_dev.txt"):
             dev_file = file
-        elif fnmatch.fnmatch(file, '*_test.txt'):
+        elif fnmatch.fnmatch(file, "*_test.txt"):
             test_file = file
 
     # -------------------- Train data preprocessing -------------------- #
@@ -79,13 +80,13 @@ def preprocess_SNLI_data(inputdir,
 
     print("\t* Computing worddict and saving it...")
     preprocessor.build_worddict(data)
-    with open(os.path.join(targetdir, "worddict.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "worddict.pkl"), "wb") as pkl_file:
         pickle.dump(preprocessor.worddict, pkl_file)
 
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = preprocessor.transform_to_indices(data)
     print("\t* Saving result...")
-    with open(os.path.join(targetdir, "train_data.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "train_data.pkl"), "wb") as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
     # -------------------- Validation data preprocessing -------------------- #
@@ -96,7 +97,7 @@ def preprocess_SNLI_data(inputdir,
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = preprocessor.transform_to_indices(data)
     print("\t* Saving result...")
-    with open(os.path.join(targetdir, "dev_data.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "dev_data.pkl"), "wb") as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
     # -------------------- Test data preprocessing -------------------- #
@@ -107,36 +108,47 @@ def preprocess_SNLI_data(inputdir,
     print("\t* Transforming words in premises and hypotheses to indices...")
     transformed_data = preprocessor.transform_to_indices(data)
     print("\t* Saving result...")
-    with open(os.path.join(targetdir, "test_data.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "test_data.pkl"), "wb") as pkl_file:
         pickle.dump(transformed_data, pkl_file)
 
     # -------------------- Embeddings preprocessing -------------------- #
     print(20*"=", " Preprocessing embeddings ", 20*"=")
     print("\t* Building embedding matrix and saving it...")
     embed_matrix = preprocessor.build_embedding_matrix(embeddings_file)
-    with open(os.path.join(targetdir, "embeddings.pkl"), 'wb') as pkl_file:
+    with open(os.path.join(targetdir, "embeddings.pkl"), "wb") as pkl_file:
         pickle.dump(embed_matrix, pkl_file)
 
 
 if __name__ == "__main__":
-    import argparse
+    default_config = "../../config/preprocessing/snli_preprocessing.json"
 
-    parser = argparse.ArgumentParser(description='Preprocess the SNLI dataset')
-    parser.add_argument('--config',
-                        default="../config/preprocessing/snli_preprocessing.json",
-                        help='Path to a configuration file for preprocessing SNLI')
+    parser = argparse.ArgumentParser(description="Preprocess the SNLI dataset")
+    parser.add_argument(
+        "--config",
+        default=default_config,
+        help="Path to a configuration file for preprocessing SNLI"
+    )
     args = parser.parse_args()
 
-    with open(os.path.normpath(args.config), 'r') as cfg_file:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    if args.config == default_config:
+        config_path = os.path.join(script_dir, args.config)
+    else:
+        config_path = args.config
+
+    with open(os.path.normpath(config_path), "r") as cfg_file:
         config = json.load(cfg_file)
 
-    preprocess_SNLI_data(os.path.normpath(config["data_dir"]),
-                         os.path.normpath(config["embeddings_file"]),
-                         os.path.normpath(config["target_dir"]),
-                         lowercase=config["lowercase"],
-                         ignore_punctuation=config["ignore_punctuation"],
-                         num_words=config["num_words"],
-                         stopwords=config["stopwords"],
-                         labeldict=config["labeldict"],
-                         bos=config["bos"],
-                         eos=config["eos"])
+    preprocess_SNLI_data(
+        os.path.normpath(os.path.join(script_dir, config["data_dir"])),
+        os.path.normpath(os.path.join(script_dir, config["embeddings_file"])),
+        os.path.normpath(os.path.join(script_dir, config["target_dir"])),
+        lowercase=config["lowercase"],
+        ignore_punctuation=config["ignore_punctuation"],
+        num_words=config["num_words"],
+        stopwords=config["stopwords"],
+        labeldict=config["labeldict"],
+        bos=config["bos"],
+        eos=config["eos"]
+    )

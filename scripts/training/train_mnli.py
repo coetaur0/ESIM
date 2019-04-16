@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 
 from torch.utils.data import DataLoader
-
 from esim.data import NLIDataset
 from esim.model import ESIM
 from utils import train, validate
@@ -65,16 +64,16 @@ def main(train_file,
 
     # -------------------- Data loading ------------------- #
     print("\t* Loading training data...")
-    with open(train_file, 'rb') as pkl:
+    with open(train_file, "rb") as pkl:
         train_data = NLIDataset(pickle.load(pkl))
 
     train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size)
 
     print("\t* Loading validation data...")
-    with open(os.path.normpath(valid_files["matched"]), 'rb') as pkl:
+    with open(os.path.normpath(valid_files["matched"]), "rb") as pkl:
         matched_valid_data = NLIDataset(pickle.load(pkl))
 
-    with open(os.path.normpath(valid_files["mismatched"]), 'rb') as pkl:
+    with open(os.path.normpath(valid_files["mismatched"]), "rb") as pkl:
         mismatched_valid_data = NLIDataset(pickle.load(pkl))
 
     matched_valid_loader = DataLoader(matched_valid_data,
@@ -86,7 +85,7 @@ def main(train_file,
 
     # -------------------- Model definition ------------------- #
     print('\t* Building model...')
-    with open(embeddings_file, 'rb') as pkl:
+    with open(embeddings_file, "rb") as pkl:
         embeddings = torch.tensor(pickle.load(pkl), dtype=torch.float)\
                      .to(device)
 
@@ -102,7 +101,7 @@ def main(train_file,
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                           mode='max',
+                                                           mode="max",
                                                            factor=0.5,
                                                            patience=0)
 
@@ -118,18 +117,18 @@ def main(train_file,
     # Continuing training from a checkpoint if one was given as argument.
     if checkpoint:
         checkpoint = torch.load(checkpoint)
-        start_epoch = checkpoint['epoch'] + 1
-        best_score = checkpoint['best_score']
+        start_epoch = checkpoint["epoch"] + 1
+        best_score = checkpoint["best_score"]
 
         print("\t* Training will continue on existing model from epoch {}..."
               .format(start_epoch))
 
-        model.load_state_dict(checkpoint['model'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        epochs_count = checkpoint['epochs_count']
-        train_losses = checkpoint['train_losses']
-        matched_valid_losses = checkpoint['match_valid_losses']
-        mismatched_valid_losses = checkpoint['mismatch_valid_losses']
+        model.load_state_dict(checkpoint["model"])
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        epochs_count = checkpoint["epochs_count"]
+        train_losses = checkpoint["train_losses"]
+        matched_valid_losses = checkpoint["match_valid_losses"]
+        mismatched_valid_losses = checkpoint["mismatch_valid_losses"]
 
     # Compute loss and accuracy before starting (or resuming) training.
     _, valid_loss, valid_accuracy = validate(model,
@@ -195,24 +194,24 @@ def main(train_file,
             # a checkpoint file that is too heavy to be shared. To resume
             # training from the best model, use the 'esim_*.pth.tar'
             # checkpoints instead.
-            torch.save({'epoch': epoch,
-                        'model': model.state_dict(),
-                        'best_score': best_score,
-                        'epochs_count': epochs_count,
-                        'train_losses': train_losses,
-                        'match_valid_losses': matched_valid_losses,
-                        'mismatch_valid_losses': mismatched_valid_losses},
+            torch.save({"epoch": epoch,
+                        "model": model.state_dict(),
+                        "best_score": best_score,
+                        "epochs_count": epochs_count,
+                        "train_losses": train_losses,
+                        "match_valid_losses": matched_valid_losses,
+                        "mismatch_valid_losses": mismatched_valid_losses},
                        os.path.join(target_dir, "best.pth.tar"))
 
         # Save the model at each epoch.
-        torch.save({'epoch': epoch,
-                    'model': model.state_dict(),
-                    'best_score': best_score,
-                    'optimizer': optimizer.state_dict(),
-                    'epochs_count': epochs_count,
-                    'train_losses': train_losses,
-                    'match_valid_losses': matched_valid_losses,
-                    'mismatch_valid_losses': mismatched_valid_losses},
+        torch.save({"epoch": epoch,
+                    "model": model.state_dict(),
+                    "best_score": best_score,
+                    "optimizer": optimizer.state_dict(),
+                    "epochs_count": epochs_count,
+                    "train_losses": train_losses,
+                    "match_valid_losses": matched_valid_losses,
+                    "mismatch_valid_losses": mismatched_valid_losses},
                    os.path.join(target_dir, "esim_{}.pth.tar".format(epoch)))
 
         if patience_counter >= patience:
@@ -221,35 +220,44 @@ def main(train_file,
 
     # Plotting of the loss curves for the train and validation sets.
     plt.figure()
-    plt.plot(epochs_count, train_losses, '-r')
-    plt.plot(epochs_count, matched_valid_losses, '-b')
-    plt.plot(epochs_count, mismatched_valid_losses, '-g')
-    plt.xlabel('epoch')
-    plt.ylabel('loss')
-    plt.legend(['Training loss',
-                'Validation loss (matched set)',
-                'Validation loss (mismatched set)'])
-    plt.title('Cross entropy loss')
+    plt.plot(epochs_count, train_losses, "-r")
+    plt.plot(epochs_count, matched_valid_losses, "-b")
+    plt.plot(epochs_count, mismatched_valid_losses, "-g")
+    plt.xlabel("epoch")
+    plt.ylabel("loss")
+    plt.legend(["Training loss",
+                "Validation loss (matched set)",
+                "Validation loss (mismatched set)"])
+    plt.title("Cross entropy loss")
     plt.show()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Train the ESIM model on MultiNLI')
-    parser.add_argument('--config',
-                        default="../config/training/mnli_training.json",
-                        help='Path to a json configuration file')
-    parser.add_argument('--checkpoint',
+    default_config = "../../config/training/mnli_training.json"
+
+    parser = argparse.ArgumentParser(description="Train the ESIM model on MultiNLI")
+    parser.add_argument("--config",
+                        default=default_config,
+                        help="Path to a json configuration file")
+    parser.add_argument("--checkpoint",
                         default=None,
-                        help='path to a checkpoint file to resume training')
+                        help="Path to a checkpoint file to resume training")
     args = parser.parse_args()
 
-    with open(os.path.normpath(args.config), 'r') as config_file:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    if args.config == default_config:
+        config_path = os.path.join(script_dir, args.config)
+    else:
+        config_path = args.config
+
+    with open(os.path.normpath(config_path), "r") as config_file:
         config = json.load(config_file)
 
-    main(os.path.normpath(config["train_data"]),
+    main(os.path.normpath(os.path.join(script_dir, config["train_data"])),
          config["valid_data"],
-         os.path.normpath(config["embeddings"]),
-         os.path.normpath(config["target_dir"]),
+         os.path.normpath(os.path.join(script_dir, config["embeddings"])),
+         os.path.normpath(os.path.join(script_dir, config["target_dir"])),
          config["hidden_size"],
          config["dropout"],
          config["num_classes"],

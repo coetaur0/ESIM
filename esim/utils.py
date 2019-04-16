@@ -11,7 +11,7 @@ import torch.nn as nn
 # https://github.com/allenai/allennlp/blob/master/allennlp/nn/util.py.
 def sort_by_seq_lens(batch, sequences_lengths, descending=True):
     """
-    Sort a batch of padded variable length sequences by length.
+    Sort a batch of padded variable length sequences by their length.
 
     Args:
         batch: A batch of padded variable length sequences. The batch should
