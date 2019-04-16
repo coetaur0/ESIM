@@ -1,7 +1,7 @@
 {
-    "data_dir": "../data/dataset/multinli_1.0",
-    "embeddings_file": "../data/embeddings/glove.840B.300d.txt",
-    "target_dir": "../data/preprocessed/MNLI",
+    "data_dir": "../../data/dataset/multinli_1.0",
+    "embeddings_file": "../../data/embeddings/glove.840B.300d.txt",
+    "target_dir": "../../data/preprocessed/MNLI",
 
     "lowercase": false,
     "ignore_punctuation": false,
