@@ -63,7 +63,6 @@ def download_unzip(url, targetdir):
     filepath = os.path.join(targetdir, url.split('/')[-1])
     target = os.path.join(targetdir,
                           ".".join((url.split('/')[-1]).split('.')[:-1]))
-    print(target)
 
     if not os.path.exists(targetdir):
         print("* Creating target directory {}...".format(targetdir))
