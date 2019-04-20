@@ -61,22 +61,26 @@ def download_unzip(url, targetdir):
                    data.
     """
     filepath = os.path.join(targetdir, url.split('/')[-1])
+    target = os.path.join(targetdir,
+                          ".".join((url.split('/')[-1]).split('.')[:-1]))
+    print(target)
 
     if not os.path.exists(targetdir):
         print("* Creating target directory {}...".format(targetdir))
         os.makedirs(targetdir)
 
-    # Download and unzip if the target directory is empty.
-    if not os.listdir(targetdir):
-        unzip(download(url, targetdir))
+    # Skip download and unzipping if the unzipped data is already available.
+    if os.path.exists(target) or os.path.exists(target + ".txt"):
+        print("* Found unzipped data in {}, skipping download and unzip..."
+              .format(targetdir))
     # Skip downloading if the zipped data is already available.
     elif os.path.exists(filepath):
-        print("* Found zipped data - skipping download...")
-        unzip(filepath)
-    # Skip download and unzipping if the unzipped data is already available.
-    else:
-        print("* Found unzipped data for {}, skipping download and unzip..."
+        print("* Found zipped data in {} - skipping download..."
               .format(targetdir))
+        unzip(filepath)
+    # Download and unzip otherwise.
+    else:
+        unzip(download(url, targetdir))
 
 
 if __name__ == "__main__":
