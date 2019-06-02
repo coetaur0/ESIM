@@ -6,10 +6,11 @@ This repository contains an implementation with PyTorch of the sequential model 
 
 ## How to
 ### Install the package
-To use the model defined in this repository, first install PyTorch on you machine by following the steps described on the
-package's [official page](https://pytorch.org/get-started/locally/). Then, to install the dependencies necessary to run
-the model, simply execute the command `pip install --upgrade .` from within the cloned repository (at the root, and preferably
-inside of a [virtual environment](https://docs.python.org/3/tutorial/venv.html)).
+To use the model defined in this repository, you will first need to install PyTorch on your machine by following the steps
+described on the package's [official page](https://pytorch.org/get-started/locally/) (this step is only necessary if you use
+Windows).
+Then, to install the dependencies necessary to run the model, simply execute the command `pip install --upgrade .` from within
+the cloned repository (at the root, and preferably inside of a [virtual environment](https://docs.python.org/3/tutorial/venv.html)).
 
 ### Fetch the data to train and test the model
 The *fetch_data.py* script located in the *scripts/* folder of this repository can be used to download some NLI dataset and
@@ -75,13 +76,15 @@ test_mnli.py [-h] [--config CONFIG] checkpoint
 where `config` is a configuration file (a default one is available in *config/testing*) and `checkpoint` is a checkpoint 
 produced by the *train_mnli.py* script.
 
-The *test_mnli.py* script makes prediction on the matched and mismatched test sets for MultiNLI available on Kaggle and saves 
-them in .csv files.
+The *test_mnli.py* script makes predictions on MultiNLI's matched and mismatched test sets and saves them in .csv files.
+To get the classification accuracy associated to the model's predictions, the .csv files it produces need to be submitted
+to the Kaggle competitions for MultiNLI.
 
 ## Results
-A model pre-trained on SNLI is made available in the *data/checkpoints* folder of this repository. The model was trained with 
-the parameters defined in the default configuration files provided in *config/*.
-To test it, simply execute `python test_model.py ../data/checkpoints/best.pth.tar` from within the *scripts/* folder.
+A model pre-trained on SNLI is made available in the *data/checkpoints/SNLI* folder of this repository. The model was trained
+with the parameters defined in the default configuration files provided in *config/*.
+To test it, simply execute `python test_snli.py ../../preprocessed/SNLI/test_data.pkl ../../data/checkpoints/best.pth.tar`
+from within the *scripts/testing* folder.
 
 The pretrained model achieves the following performance on the SNLI dataset:
 
@@ -102,4 +105,4 @@ On MultiNLI, the model reaches the following accuracy:
 | Dev   |  77.0 % |   76.8 %   |
 | Test  |  76.6 % |   75.8 %   |
 
-These results are above what was reported by Williams et al. in their MultiNLI paper.
+These results are slightly above what was reported by Williams et al. in their MultiNLI paper.
