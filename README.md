@@ -8,6 +8,8 @@ The figure below illustrates a high-level view of the model's architecture.
 
 ![alt-text](./esim.png)
 
+This model was implemented in the context of [my master's thesis](https://coetaur0.github.io/projects/lean/) at the university of Geneva.
+
 ## How to
 ### Install the package
 To use the model defined in this repository, you will first need to install PyTorch on your machine by following the steps
