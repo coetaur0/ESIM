@@ -140,7 +140,8 @@ class SoftmaxAttention(nn.Module):
                 premise_batch,
                 premise_mask,
                 hypothesis_batch,
-                hypothesis_mask):
+                hypothesis_mask,
+                output_attentions = False):
         """
         Args:
             premise_batch: A batch of sequences of vectors representing the
@@ -155,12 +156,23 @@ class SoftmaxAttention(nn.Module):
             hypothesis_mask: A mask for the sequences in the hypotheses batch,
                 to ignore padding data in the sequences during the computation
                 of the attention.
+            output_attentions: returns the softmaxed attention value matrix for the 
+                premise and hypothesis after cross attention. Default is 'False'.
 
         Returns:
             attended_premises: The sequences of attention vectors for the
                 premises in the input batch.
             attended_hypotheses: The sequences of attention vectors for the
                 hypotheses in the input batch.
+            
+            if output_attentions is True:
+            
+            hyp_prem_attn: softmaxed attention values for each premise token across all hypothesis tokens,ie
+                masked softmax using the premise mask
+                
+            prem_hyp_mask: softmaxed attention values for each hypothesis token across all premise tokens,ie
+                masked softmax using the hypothesis mask
+                  
         """
         # Dot product between premises and hypotheses in each sequence of
         # the batch.
@@ -182,4 +194,5 @@ class SoftmaxAttention(nn.Module):
                                            hyp_prem_attn,
                                            hypothesis_mask)
 
+        if output_attentions: return attended_premises, attended_hypotheses, hyp_prem_attn, prem_hyp_attn
         return attended_premises, attended_hypotheses
