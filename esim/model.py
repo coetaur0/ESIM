@@ -24,6 +24,7 @@ class ESIM(nn.Module):
                  padding_idx=0,
                  dropout=0.5,
                  num_classes=3,
+                 output_attentions = False,
                  device="cpu"):
         """
         Args:
@@ -40,6 +41,8 @@ class ESIM(nn.Module):
                 Defaults to 0.5.
             num_classes: The number of classes in the output of the network.
                 Defaults to 3.
+            output_attentions: returns the attentions for premise and hypothesis
+                after cross attention. Defaults to 'False'
             device: The name of the device on which the model is being
                 executed. Defaults to 'cpu'.
         """
@@ -50,6 +53,7 @@ class ESIM(nn.Module):
         self.hidden_size = hidden_size
         self.num_classes = num_classes
         self.dropout = dropout
+        self.output_attn = output_attentions
         self.device = device
 
         self._word_embedding = nn.Embedding(self.vocab_size,
@@ -128,9 +132,17 @@ class ESIM(nn.Module):
         encoded_hypotheses = self._encoding(embedded_hypotheses,
                                             hypotheses_lengths)
 
-        attended_premises, attended_hypotheses =\
-            self._attention(encoded_premises, premises_mask,
-                            encoded_hypotheses, hypotheses_mask)
+        if self.output_attn:
+            attended_premises, attended_hypotheses, hyp_attn, prem_attn =self._attention(encoded_premises,
+                                                                              premises_mask,
+                                                                              encoded_hypotheses,
+                                                                              hypotheses_mask,
+                                                                              output_attentions = self.output_attn)
+        else:
+            attended_premises, attended_hypotheses =self._attention(encoded_premises,
+                                                                              premises_mask,
+                                                                              encoded_hypotheses,
+                                                                              hypotheses_mask)
 
         enhanced_premises = torch.cat([encoded_premises,
                                        attended_premises,
@@ -170,7 +182,10 @@ class ESIM(nn.Module):
         logits = self._classification(v)
         probabilities = nn.functional.softmax(logits, dim=-1)
 
+        if self.output_attn:
+            return logits, probabilities, attn_vec
         return logits, probabilities
+
 
 
 def _init_esim_weights(module):
