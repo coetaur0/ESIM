@@ -167,10 +167,10 @@ class SoftmaxAttention(nn.Module):
             
             if output_attentions is True:
             
-            hyp_prem_attn: softmaxed attention values for each premise token across all hypothesis tokens,ie
+            hyp_prem_attn: attention values for each hypothesis token softmaxed across all premise tokens,ie
                 masked softmax using the premise mask
                 
-            prem_hyp_mask: softmaxed attention values for each hypothesis token across all premise tokens,ie
+            prem_hyp_mask: attention values for each premise token softmaxed across all hypothesis tokens,ie
                 masked softmax using the hypothesis mask
                   
         """

@@ -133,13 +133,13 @@ class ESIM(nn.Module):
                                             hypotheses_lengths)
 
         if self.output_attn:
-            attended_premises, attended_hypotheses, attn_vec =self._attention(encoded_premises,
+            attended_premises, attended_hypotheses, hyp_attn, prem_attn =self._attention(encoded_premises,
                                                                               premises_mask,
                                                                               encoded_hypotheses,
                                                                               hypotheses_mask,
                                                                               output_attentions = self.output_attn)
         else:
-            attended_premises, attended_hypotheses, attn_vec =self._attention(encoded_premises,
+            attended_premises, attended_hypotheses =self._attention(encoded_premises,
                                                                               premises_mask,
                                                                               encoded_hypotheses,
                                                                               hypotheses_mask)
